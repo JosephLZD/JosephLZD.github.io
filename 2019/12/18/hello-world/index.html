@@ -11,7 +11,7 @@
   <title>
     Hello World |
     
-    Blog_Josephlzd</title>
+    Blog_JosephLZD</title>
   
     <link rel="shortcut icon" href="/favicon.ico">
   
@@ -95,7 +95,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/12/18/hello-world/" data-id="ck4b9zs3a0000y86c1aaw800q"
+      <a data-url="http://yoursite.com/2019/12/18/hello-world/" data-id="ck4bazzy300001l6c3ka314jt"
          class="article-share-link">Share</a>
       
     </footer>
@@ -109,6 +109,32 @@
 
   
     
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
   
 
 </article>
@@ -128,7 +154,7 @@
 </ul>
     </div>
     <ul class="list-inline">
-      <li>&copy; 2019 Blog_Josephlzd</li>
+      <li>&copy; 2019 Blog_JosephLZD</li>
       <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
     </ul>
   </div>
@@ -142,25 +168,25 @@
 <nav class="navbar">
   
     <div class="logo">
-      <a href="/"><img src="/images/hexo.svg" alt="Blog_Josephlzd"></a>
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
     </div>
   
   <ul class="nav nav-main">
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/">主页</a>
+        <a class="nav-item-link" href="/">Home</a>
       </li>
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/archives">目录</a>
+        <a class="nav-item-link" href="/archives">Archive</a>
       </li>
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/gallery">相册</a>
+        <a class="nav-item-link" href="/gallery">Gallery</a>
       </li>
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/about">关于我</a>
+        <a class="nav-item-link" href="/about">About</a>
       </li>
     
     <li class="nav-item">
