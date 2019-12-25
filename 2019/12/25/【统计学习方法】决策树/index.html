@@ -92,7 +92,7 @@
 <p>我们往往称”经验熵“，也就是说根据历史数据来计算熵值。公式: </p>
 <p>2）<strong>信息增益是什么呢？</strong>信息增益，表示<em>得知特征X的信息，而使得类别Y的信息的不确定性减少的程度</em>。对我们这个决策树来说，所选择的特征越有信息量，越减少我们的不确定性，对应的信息增益则越大。</p>
 <p>这里<em>信息增益的计算是：.  即两种情况的熵之差</em>。</p>
-<p>比较复杂的是H(D|A)的计算方法：<br><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3d3dy5wa3Vkb2RvLmNvbS93cC1jb250ZW50L3VwbG9hZHMvMjAxOC8xMS8lRTQlQkYlQTElRTYlODElQUYlRTUlQTIlOUUlRTclOUIlOEElRTclQUUlOTclRTYlQjMlOTUxLnBuZw?x-oss-process=image/format,png" alt="Alt"><br><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3d3dy5wa3Vkb2RvLmNvbS93cC1jb250ZW50L3VwbG9hZHMvMjAxOC8xMS8lRTQlQkYlQTElRTYlODElQUYlRTUlQTIlOUUlRTclOUIlOEElRTclQUUlOTclRTYlQjMlOTUyLnBuZw?x-oss-process=image/format,png" alt="Alt"></p>
+<p>比较复杂的是H(D|A)的计算方法：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%86%B3%E7%AD%96%E6%A0%911.jpeg?Expires=1577291303&OSSAccessKeyId=TMP.hhX4qJdjNHPgXipU2CKVGyBwCj1vC6SLrG2taojFRpVAaShzC4AnAjTpGXLzSA8w7pTqJitJzDPB3y9nm5yfhAqMhQyx4maKy5ksHNFJMR6GMrADDms9MDui829tka.tmp&Signature=NwFQ1K6%2FUTZ3yEDmi4JBBBmG6iY%3D" alt="Alt"></p>
 <p><strong>我对H（D|A)公式的理解</strong>：</p>
 <p>首先要清楚D是数据集的标签集，A是某一个特征。注意公式中的累加符号，n表示该特征具有n种取值，对应每种取值下再计算类别的熵，即其中的K是共有K类，而Dik是指特征A取值为第i种取值且类别为k的样本数量。</p>
 <blockquote>
@@ -107,7 +107,7 @@
 <p>剪枝从已生成的树上裁掉一些子树或叶结点，并将其根节点或父结点作为新的叶结点。</p>
 </blockquote>
 <p>决策树的剪枝往往通过极小化损失函数来实现。</p>
-<p><img src="https://private.codecogs.com/gif.latex?C_%7Ba%7D%28T%29%3D%5Csum_%7Bt%3D1%7D%5E%7BT%7D%7BN_tH_t%28T%29&plus;aT%7D" alt="在这里插入图片描述"></p>
+<p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%86%B3%E7%AD%96%E6%A0%912.gif?Expires=1577291342&OSSAccessKeyId=TMP.hhX4qJdjNHPgXipU2CKVGyBwCj1vC6SLrG2taojFRpVAaShzC4AnAjTpGXLzSA8w7pTqJitJzDPB3y9nm5yfhAqMhQyx4maKy5ksHNFJMR6GMrADDms9MDui829tka.tmp&Signature=BJNZUIkqjTkaVym%2BEb4XXWaTZU8%3D" alt="Alt"></p>
 <p>Nt是叶子结点的个数，其中k类的样本点有Ntk个，Ht(T)为叶结点t上的经验熵，a&gt;=0为参数。</p>
 <p>第一项是”模型与训练数据的拟合程度“，即经验熵越小越好。</p>
 <p>第二项是”模型复杂度(规模)的体现“，即控制决策树不要太复杂。</p>
