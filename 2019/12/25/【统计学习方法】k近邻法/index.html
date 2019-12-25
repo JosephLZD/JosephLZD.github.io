@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    【统计学习方法】k近邻法 |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-【统计学习方法】k近邻法" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      【统计学习方法】k近邻法
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2019/12/25/%E3%80%90%E7%BB%9F%E8%AE%A1%E5%AD%A6%E4%B9%A0%E6%96%B9%E6%B3%95%E3%80%91k%E8%BF%91%E9%82%BB%E6%B3%95/" class="article-date">
+  <time datetime="2019-12-25T14:42:10.000Z" itemprop="datePublished">2019-12-25</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <h1 id="要点摘记"><a href="#要点摘记" class="headerlink" title="要点摘记"></a>要点摘记</h1><ol>
+<li>k近邻法的概念</li>
+</ol>
+<p>k近邻法实际上利用训练数据集与特征向量空间进行划分，并作为其分类的模型。<br><strong>k值的选择、距离度量、分类决策规则</strong> 是k近邻法的三个基本要素。<br><strong>k近邻法的思想</strong>：<em>给定一个训练数据集，对新的输入实例，在训练数据集中找到与该实例最邻近的k个实例，这k个实例的多数属于某个类，就把该实例分为这个类。</em></p>
+<ol start="2">
+<li>pd树</li>
+</ol>
+<p>pd树：<em>可以减少计算距离的次数，不然每次都去找离估计点最近的k个点，要距离计算很多次。pd树实质是二叉树，这样的话其实只需要计算logn次距离。</em><br><strong>pd树的构造</strong>：依次选取坐标轴，然后对该区域内的实例点在这个坐标上的取值取中位数，以此划分界线。直到子区域中没有实例点了。<br><strong>怎么应用pd树来求最近的k个邻点？</strong>：最后得到一个pd树，每个节点是”分界线“上的点，每一层代表着以某条坐标轴分界的结果。所以首先找到包含目标点x的叶结点，从根节点出发，以二分法走到包含该点的最小子区域的那个叶结点，然后就以这个叶结点（其实是最后一次分界线上的结点）作为最近结点，向上回溯，每次看看以最近距离画出的圆是否和同一次分界出来的兄弟区域相交，如果是，去看看那个子区域里是否有与之更近的点。直到达到根节点。</p>
+<h1 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">loadData</span><span class="params">(fileName)</span>:</span></span><br><span class="line">    print(<span class="string">'start load file'</span>)</span><br><span class="line">    dataArr = []; labelArr = []</span><br><span class="line">    fr = open(fileName)</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> fr.readlines():</span><br><span class="line">        curLine = line.strip().split(<span class="string">','</span>)</span><br><span class="line">        dataArr.append([int(num) <span class="keyword">for</span> num <span class="keyword">in</span> curLine])</span><br><span class="line">        labelArr.append(int(curLine[<span class="number">0</span>]))</span><br><span class="line">    <span class="keyword">return</span> dataArr,labelArr</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">calDist</span><span class="params">(x1,x2)</span>:</span> <span class="comment">#计算两个坐标之间的距离 欧氏距离</span></span><br><span class="line">    <span class="keyword">return</span> np.sqrt(np.sum(np.square(x1 - x2))) <span class="comment">#对应坐标相减 得到的是list来求和</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">getClosest</span><span class="params">(trainDataMat, trainLabelMat, x, topK)</span>:</span> <span class="comment">#K近邻</span></span><br><span class="line">    <span class="comment">#首先需要计算距离，找到离x最近的k个点</span></span><br><span class="line">    distList = [<span class="number">0</span>] * len(trainDataMat)  <span class="comment">#这个初始化list学到了！</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(len(trainDataMat)):</span><br><span class="line">        distList[i] = calDist(x,trainDataMat[i])</span><br><span class="line"></span><br><span class="line">    topKList = np.argsort(np.array(distList))[:topK] <span class="comment">#argsort排序，且返回的是索引序列</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">#多数表决</span></span><br><span class="line">    labelList = [<span class="number">0</span>] * <span class="number">10</span>  <span class="comment">#一共10个类</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(topK):</span><br><span class="line">        thisLabel = int(trainLabelMat[topKList[i]]) <span class="comment">#这个近邻点所在的类</span></span><br><span class="line">        <span class="comment">#注意在这里要用int转一下，否则放到下标里会报错</span></span><br><span class="line">        labelList[thisLabel] += <span class="number">1</span> <span class="comment">#该类别表决加一分</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> labelList.index(max(labelList))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test</span><span class="params">(trainDataArr, trainLabelArr, testDataArr, testLabelArr, topK)</span>:</span></span><br><span class="line">    print(<span class="string">'test start'</span>)</span><br><span class="line">    trainDataMat = np.mat(trainDataArr)</span><br><span class="line">    trainLabelMat = np.mat(trainLabelArr).T</span><br><span class="line">    testDataMat = np.mat(testDataArr)</span><br><span class="line">    testLabelMat = np.mat(testLabelArr).T</span><br><span class="line">    n = len(testDataArr)</span><br><span class="line">    errorCnt = <span class="number">0</span></span><br><span class="line">    <span class="comment">#for i in range(n): #这里图快，只测试200个</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">200</span>):</span><br><span class="line">        x = testDataArr[i]</span><br><span class="line">        x_label = getClosest(trainDataMat, trainLabelMat, x, topK)</span><br><span class="line">        <span class="keyword">if</span> x_label != testLabelMat[i]:</span><br><span class="line">            errorCnt += <span class="number">1</span></span><br><span class="line">    acc = (float)(<span class="number">1</span> - (float)(errorCnt / <span class="number">200</span>)) <span class="comment">#准确度</span></span><br><span class="line">    <span class="keyword">return</span> acc</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    start = time.time()</span><br><span class="line"></span><br><span class="line">    <span class="comment">#获取训练集</span></span><br><span class="line">    trainDataArr, trainLabelArr = loadData(<span class="string">'../Mnist/mnist_train.csv'</span>)</span><br><span class="line">    <span class="comment">#获取测试集</span></span><br><span class="line">    testDataArr, testLabelArr = loadData(<span class="string">'../Mnist/mnist_test.csv'</span>)</span><br><span class="line"></span><br><span class="line">    acc = test(trainDataArr,trainLabelArr,testDataArr,testLabelArr,<span class="number">25</span>) <span class="comment">#k取25</span></span><br><span class="line"></span><br><span class="line">    print(<span class="string">"accuracy:&#123;&#125;"</span>.format(acc))</span><br><span class="line"></span><br><span class="line">    end = time.time()</span><br><span class="line"></span><br><span class="line">    print(<span class="string">'time cost:'</span>, end-start)</span><br><span class="line"></span><br><span class="line">    <span class="comment">#我的mbp跑完两百个数据要675秒</span></span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/12/25/%E3%80%90%E7%BB%9F%E8%AE%A1%E5%AD%A6%E4%B9%A0%E6%96%B9%E6%B3%95%E3%80%91k%E8%BF%91%E9%82%BB%E6%B3%95/" data-id="ck4letthq00004w6c7h7x4jss"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BB%9F%E8%AE%A1%E5%AD%A6%E4%B9%A0%E6%96%B9%E6%B3%95/" rel="tag">统计学习方法</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/2019/12/25/%E3%80%90%E7%BB%9F%E8%AE%A1%E5%AD%A6%E4%B9%A0%E6%96%B9%E6%B3%95%E3%80%91%E6%9C%B4%E7%B4%A0%E8%B4%9D%E5%8F%B6%E6%96%AF/" class="article-nav-link">
+        <strong class="article-nav-caption">Newer posts</strong>
+        <div class="article-nav-title">
+          
+            【统计学习方法】朴素贝叶斯
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2019/12/25/%E3%80%90%E7%BB%9F%E8%AE%A1%E5%AD%A6%E4%B9%A0%E6%96%B9%E6%B3%95%E3%80%91%E6%84%9F%E7%9F%A5%E6%9C%BA/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">【统计学习方法】感知机</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2019 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
