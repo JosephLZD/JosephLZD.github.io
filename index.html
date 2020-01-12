@@ -67,6 +67,92 @@
       
         
 
+<article id="post-Genarative-Modeling" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h2 itemprop="name">
+      <a class="article-title" href="/2020/01/12/Genarative-Modeling/">Genarative_Modeling</a>
+    </h2>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/01/12/Genarative-Modeling/" class="article-date">
+  <time datetime="2020-01-12T07:17:43.000Z" itemprop="datePublished">2020-01-12</time>
+</a>
+        
+      </div>
+    
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <h2 id="Chapter1-Generative-Modeling"><a href="#Chapter1-Generative-Modeling" class="headerlink" title="Chapter1 Generative Modeling"></a>Chapter1 Generative Modeling</h2><p>&lt;!—more—&gt;</p>
+<ol>
+<li><p>什么是<strong>生成式建模</strong>？<br>用概率模型来描述一个数据集的产生，这叫生成式建模。从中采样，我们就可以生成类似的新的数据。<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8lRTUlOUIlQkUxLnBuZw?x-oss-process=image/format,png" alt="在这里插入图片描述"><br>可以理解成，一个数据集是符合一个未知的概率分布的，而生成式建模就需要模仿这种概率分布，以便之后采样，生成类似数据。</p>
+</li>
+<li><p>我们之前常见的比如图像分类都属于<strong>分类模型</strong>（Discriminative Modeling)，与生成模型区别开。<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8lRTUlOUIlQkUyLnBuZw?x-oss-process=image/format,png" alt="在这里插入图片描述"></p>
+</li>
+</ol>
+<p> <strong>区别：分类模型属于监督学习，重点在“进行分类应用”；生成模型大多属于无监督学习，重点在于“生成新数据”。</strong></p>
+<ol start="3">
+<li><p>生成模型会更重要的三个原因：<br>①探究数据如何产生<br>②驱使未来科技进步（如车自行模拟虚拟训练环境）<br>③更符合人类思想</p>
+</li>
+<li><p>生成式概率模型<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8lRTUlOUIlQkUzLnBuZw?x-oss-process=image/format,png" alt="在这里插入图片描述"><br>如上图所示，对于这些样本点，我们的概率模型Pmodel（黄框）是对原本数据概率模型Pdata的一种模仿。<br>对于生成式概率模型，主要有四大要素：<em>样本空间、概率密度函数、系数模型、极大似然估计</em>。<br>-对于概率密度函数的理解：就如上图的黄框，是我们自己建立的概率模型Pmodel。<br>-对于系数模型的理解：通过一些系数来表示所有可能的Pmodel，如上图黄框的左下点坐标和右上点坐标。<br>-likelihood：<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8lRTUlOUIlQkU0LnBuZw?x-oss-process=image/format,png" alt="在这里插入图片描述"><br>（在参数模型θ下的概率分布对于数据X的适用可能性）<br>-极大似然估计MLE：<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8lRTUlOUIlQkU1LnBuZw?x-oss-process=image/format,png" alt="在这里插入图片描述"></p>
+</li>
+<li><p><strong>朴素贝叶斯模型</strong><br>朴素贝叶斯的大前提：<strong>各个属性相互独立</strong>。</p>
+</li>
+</ol>
+<p> <em>我的理解：对于样本拥有很多属性的数据集。对每个属性的不同取值，进行计算得到一系列概率。最后，如果要计算一类样本（即所有属性的某种组合）的概率，则进行简单相乘即可。</em><br>对于书中讲到的例子（共五种属性，每种属性的取值类别数分别为7 6 3 4 8，则共需要系数个数=7+6+3+￥+8-5=23，因为每种属性的概率总和为1，所以每种属性其实只需要取值个数-1）。<br>然后计算针对每种属性，不同取值出现的概率，最后对于一种属性取值组合实例，通过概率相乘来得到该实例的概率。即便该实例在数据集中未出现过，计算出的概率也可能不为0.</p>
+<ol start="6">
+<li>打破属性之间的相互独立性——引入<strong>生成式建模</strong><br>将视线聚焦在<strong>“像素”</strong>层面，对于朴素贝叶斯是无法知道两个相邻元素之间的相似性的。<br>挑战：属性之间的高度依赖；如何找到令人满意的生成结果。<br>我们需要自行找出数据中的关联结构，而非人为提前假设。</li>
+</ol>
+<p> <strong>表示学习</strong>：</p>
+<blockquote>
+<p> Describe each observation in the training set using some<br>low-dimensional latent space and then learn a mapping function that<br>can take a point in the latent space and map it to a point in the<br>original domain.</p>
+</blockquote>
+<p> 表示学习其实是一种mapping，将低维隐层中生成一个点，映射到通用领域的具体结果中。<br> 表示学习的好处在于可以学习到哪个特征最具代表性，从而对一个实例进行较精确的描述。<br> <em>我的理解：不是仅停留在像素层面，而是建立隐层（可以更低维）的特征来表示图像，然后再对这些特征进行组合，从而生成新数据。</em></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/12/Genarative-Modeling/" data-id="ck5aotzot0000u06c3oycgsgj"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/GenerativeDeepLearing/" rel="tag">GenerativeDeepLearing</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+
+  
+
+</article>
+
+
+
+      
+        
+
 <article id="post-大数据技术课程复习" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
   
   <div class="article-inner">
