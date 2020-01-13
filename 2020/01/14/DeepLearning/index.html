@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    DeepLearning |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-DeepLearning" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      DeepLearning
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/01/14/DeepLearning/" class="article-date">
+  <time datetime="2020-01-13T22:50:17.000Z" itemprop="datePublished">2020-01-14</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <h1 id="生成式深度学习的第二章：生成式建模"><a href="#生成式深度学习的第二章：生成式建模" class="headerlink" title="生成式深度学习的第二章：生成式建模"></a>生成式深度学习的第二章：生成式建模</h1><a id="more"></a>
+
+<h2 id="Definition-of-Deep-Learning"><a href="#Definition-of-Deep-Learning" class="headerlink" title="Definition of Deep Learning:"></a>Definition of Deep Learning:</h2><blockquote>
+<p> Deep learning is a class of machine learning algorithm that uses<br>multiple stacked layers of processing units to learn high-level<br>representations from unstructured data.</p>
+</blockquote>
+<p> <em>深度学习是一系列的机器学习方法，采用*</em>多层神经元的结构<strong>来对</strong>非结构化数据<strong>进行</strong>高维度层面的表示***。<br><br></p>
+<h2 id="非结构化数据："><a href="#非结构化数据：" class="headerlink" title="非结构化数据："></a><strong>非结构化数据</strong>：</h2><p> 我之前简单的理解就是，结构化数据可以放到传统的关系型数据库中进行存储，由多个属性来表示。<br> 而<strong>非结构化数据不能被多个属性来表示，比如图像、音频和文本。即便像图像可由像素来表示，但知道单个像素对感知整体毫无信息量</strong>。<br> 这也体现了非结构化数据的一大特点：即便可由多个属性表示，<strong>这些属性也是在空间上相互依赖，因此单个属性是没有信息量的</strong>。</p>
+<p>深度学习能从非结构化数据中，自行建立高维的有信息量(informative)的特征。</p>
+<br>
+
+<h2 id="Keras中构建深度模型"><a href="#Keras中构建深度模型" class="headerlink" title="Keras中构建深度模型"></a>Keras中构建深度模型</h2><p> 有两种方式：Sequential model / using the Functional API.<br> ①<strong>Sequential model</strong>：a linear stack of layers.连续模型指<strong>一层接一层，不能同时接收前面多层的输出</strong>，没有分支。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> keras.models <span class="keyword">import</span> Sequential</span><br><span class="line"><span class="keyword">from</span> keras.layers <span class="keyword">import</span> Flatten, Dense</span><br><span class="line"></span><br><span class="line">model = Sequential([    Dense(units=<span class="number">200</span>,activation=<span class="string">'relu'</span>,input_shape=(<span class="number">32</span>,<span class="number">32</span>,<span class="number">3</span>)),</span><br><span class="line">Flatten(),</span><br><span class="line">Dense(<span class="number">150</span>, activation=<span class="string">'relu'</span>),</span><br><span class="line">Dense(<span class="number">10</span>, activation=<span class="string">'softmax'</span>),</span><br><span class="line">])</span><br><span class="line"><span class="comment">#Dense的第一个参数值是该层的神经元个数，也是该层输出值的个数！activation是指定激活函数。</span></span><br><span class="line"><span class="comment">#可见，连续模型主要用到Dense函数，Dense层包括权重计算+非线性激活函数。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#Flatten(x)是把x扯成一个一维向量。因为Dense层输入要求是一维向量(a flat rather than multidimensional array)。</span></span><br></pre></td></tr></table></figure>
+
+<p>②<strong>using the Functional API</strong>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> keras.layers <span class="keyword">import</span> Input, Flatten, Dense</span><br><span class="line"><span class="keyword">from</span> keras.models <span class="keyword">import</span> Model</span><br><span class="line"></span><br><span class="line">input_layer = Input(shape=(<span class="number">32</span>,<span class="number">32</span>,<span class="number">3</span>))</span><br><span class="line">x = Flatten()(input_layer)</span><br><span class="line">x = Dense(units=<span class="number">200</span>, activation=<span class="string">'relu'</span>)(x)</span><br><span class="line">x = Dense(units=<span class="number">150</span>, activation=<span class="string">'relu'</span>)(x)</span><br><span class="line">output_layer = Dense(units=<span class="number">10</span>,activation=<span class="string">'softmax'</span>)(x)</span><br><span class="line">model = Model(input_layer, output_layer)</span><br><span class="line"><span class="comment">#先用函数将层与层之间的连接关系设置好，这里易见其实更加灵活。最后用Model函数将第一个输入层和最后的输出层放进去即可。</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#可以调用函数看看该模型的情况，看看每层的输出维度以及该层的系数个数。</span></span><br><span class="line">model.summary()</span><br></pre></td></tr></table></figure>
+
+<h3 id="激活函数"><a href="#激活函数" class="headerlink" title="激活函数"></a>激活函数</h3><p> <strong>ReLU, LeakyReLU, Sigmoid</strong>：<br> <img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8yJUU1JTlCJUJFMS5wbmc?x-oss-process=image/format,png" alt="图1"><br> <em>注意：sigmoid很适用于输出值位于[0,1]，由图可见</em><br> <strong>Softmax</strong>：<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8yJUU1JTlCJUJFMi5wbmc?x-oss-process=image/format,png" alt="2"><br> <em>注意：softmax很适用于输出值之和=1，因为softmax也可以看作一种概率计算，且保证结果为正数。</em><br> <br></p>
+<h2 id="编译模型（Compiling-the-model"><a href="#编译模型（Compiling-the-model" class="headerlink" title="编译模型（Compiling the model)"></a>编译模型（Compiling the model)</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> keras.optimizers <span class="keyword">import</span> Adam</span><br><span class="line"><span class="comment">#优化器</span></span><br><span class="line">opt = Adam(lr=<span class="number">0.005</span>)</span><br><span class="line"><span class="comment">#调用model.compile函数，设置损失函数、优化器和要输出的东西如准确度）</span></span><br><span class="line">model.compile(loss=<span class="string">'categorical_crossentropy'</span>, optimizer=opt, metrics=[<span class="string">'accuracy'</span>])</span><br></pre></td></tr></table></figure>
+<h3 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h3><p>有三种内置损失函数：mean squared error, categorical cross-entropy, binary cross-entropy.<br>①mean squared error最小二乘法<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8yJUU1JTlCJUJFMy5wbmc?x-oss-process=image/format,png" alt="3"><br>②categorical cross-entropy交叉熵，每个样本仅属于一个类。<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8yJUU1JTlCJUJFNC5wbmc?x-oss-process=image/format,png" alt="4"><br>③binary cross-entropy交叉熵，每个样本可同时属于多个类。<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8yJUU1JTlCJUJFNS5wbmc?x-oss-process=image/format,png" alt="5"><br><br></p>
+<h2 id="训练模型"><a href="#训练模型" class="headerlink" title="训练模型"></a>训练模型</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">model.fit(x_train</span><br><span class="line">        ,y_train</span><br><span class="line">        ,batch_size = <span class="number">32</span></span><br><span class="line">        ,epochs = <span class="number">10</span></span><br><span class="line">        ,shuffle = <span class="literal">True</span></span><br><span class="line">        )</span><br></pre></td></tr></table></figure>
+<p>batch_size设定一个batch的大小，<strong>1个batch对应1次训练</strong>。batch_size越大，梯度下降计算越稳定，但训练速度变慢。<br>epochs指<strong>整个样本集</strong>要在网络中训练多少次。<br><br></p>
+<h2 id="检验模型"><a href="#检验模型" class="headerlink" title="检验模型"></a>检验模型</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">model.evaluate(x_test, y_test)</span><br><span class="line"></span><br><span class="line">CLASSES = np.array([<span class="string">'airplane'</span>, <span class="string">'automobile'</span>, <span class="string">'bird'</span>, <span class="string">'cat'</span>, <span class="string">'deer'</span>, <span class="string">'dog'</span>, <span class="string">'frog'</span>, <span class="string">'horse'</span>, <span class="string">'ship'</span>, <span class="string">'truck'</span>])</span><br><span class="line"></span><br><span class="line">preds = model.predict(x_test)</span><br><span class="line">preds_single = CLASSES[np.argmax(preds, axis = <span class="number">-1</span>)] <span class="comment">#预测为第几类，作为CLASSES标签数组的索引</span></span><br><span class="line">actual_single = CLASSES[np.argmax(y_test, axis = <span class="number">-1</span>)]</span><br><span class="line"></span><br><span class="line">n_to_show = <span class="number">10</span></span><br><span class="line">indices = np.random.choice(range(len(x_test)), n_to_show)  <span class="comment">#随机从0~样本数量中抽取10个样本</span></span><br><span class="line"></span><br><span class="line">fig = plt.figure(figsize=(<span class="number">15</span>, <span class="number">3</span>))</span><br><span class="line">fig.subplots_adjust(hspace=<span class="number">0.4</span>, wspace=<span class="number">0.4</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i, idx <span class="keyword">in</span> enumerate(indices):  <span class="comment">#此种取法，i是数组中的序号，idx是取到的值即样本真正序号</span></span><br><span class="line">    img = x_test[idx]</span><br><span class="line">    ax = fig.add_subplot(<span class="number">1</span>, n_to_show, i+<span class="number">1</span>)  <span class="comment">#fig.add_subplot(行数，列数，第几个)</span></span><br><span class="line">    ax.axis(<span class="string">'off'</span>)</span><br><span class="line">    ax.text(<span class="number">0.5</span>, <span class="number">-0.35</span>, <span class="string">'pred = '</span> + str(preds_single[idx]), fontsize=<span class="number">10</span>, ha=<span class="string">'center'</span>, transform=ax.transAxes) </span><br><span class="line">    ax.text(<span class="number">0.5</span>, <span class="number">-0.7</span>, <span class="string">'act = '</span> + str(actual_single[idx]), fontsize=<span class="number">10</span>, ha=<span class="string">'center'</span>, transform=ax.transAxes)</span><br><span class="line">    <span class="comment">#注意transform=ax.transAxes的解释：</span></span><br><span class="line">    <span class="comment">#The coordinate system of the Axes; (0, 0) is bottom left of the axes, and (1, 1) is top right of the axes.</span></span><br><span class="line">    <span class="comment">#因为我这里设置text的位置是以（0，1）为基础，即0.5就为中心，所以要设置为ax.transAxes，否则就整成欧氏距离了。</span></span><br><span class="line">    ax.imshow(img)</span><br></pre></td></tr></table></figure>
+<p>运行结果如图：<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8yJUU1JTlCJUJFNi5wbmc?x-oss-process=image/format,png" alt="6"></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>构建网络模型：<br>input Dense Model -&gt; compile -&gt; fit -&gt; evaluate -&gt; predict<br><br></p>
+<h2 id="卷积神经网络"><a href="#卷积神经网络" class="headerlink" title="卷积神经网络"></a>卷积神经网络</h2><p>卷积神经网络的原理不多说，其实就是多次卷积核运算+maxpooling降维+全连接层。之前在莫凡python上跟着做过，回顾了之前的代码对比后发现比较冗杂，在于莫凡用placeholder函数亲自构造系数，甚至把矩阵相乘也写得很清楚（然而其间人为很容易出现维度不一致的问题）：<a href="https://github.com/JosephLZD/tensorflow-/blob/master/%E7%94%A8Tensorflow%E5%AE%9E%E7%8E%B0.ipynb" target="_blank" rel="noopener">莫凡CNN代码</a></p>
+<p>此书的代码则轻便许多，直接用Conv2D函数即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">input_layer = Input(shape=(<span class="number">32</span>,<span class="number">32</span>,<span class="number">3</span>))</span><br><span class="line">conv_layer_1 = Conv2D(</span><br><span class="line">                filters = <span class="number">10</span></span><br><span class="line">                ,kernel_size=(<span class="number">4</span>,<span class="number">4</span>)</span><br><span class="line">                ,strides = <span class="number">2</span></span><br><span class="line">                ,padding = <span class="string">'same'</span></span><br><span class="line">                )(input_layer)</span><br><span class="line">conv_layer_2 = Conv2D(</span><br><span class="line">                filters = <span class="number">20</span></span><br><span class="line">                ,kernel_size=(<span class="number">3</span>,<span class="number">3</span>)</span><br><span class="line">                ,strides = <span class="number">2</span></span><br><span class="line">                ,padding = <span class="string">'same'</span></span><br><span class="line">                )(conv_layer_1)</span><br><span class="line">flatten_layer = Flatten()(conv_layer_2)</span><br><span class="line">output_layer = Dense(units=<span class="number">10</span>, activation=<span class="string">'softmax'</span>)(flatten_layer)</span><br><span class="line">model = Model(input_layer, output_layer)</span><br></pre></td></tr></table></figure>
+<p>由于设置padding = ‘same’，所以卷积运算后本应生成的feature map维度不变，但注意到strides即步长=2，所以维度减半。</p>
+<p>该代码构建的网络如下图所示：<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8yJUU1JTlCJUJFNy5wbmc?x-oss-process=image/format,png" alt="7"></p>
+<p>这里附加补充书附代码，对卷积运算进行了手动实现。<br><strong>code（Horizontal edge filter）：</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">%matplotlib inline</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">from</span> scipy.ndimage <span class="keyword">import</span> correlate</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">from</span> skimage <span class="keyword">import</span> data</span><br><span class="line"><span class="keyword">from</span> skimage.color <span class="keyword">import</span> rgb2gray</span><br><span class="line"><span class="keyword">from</span> skimage.transform <span class="keyword">import</span> rescale,resize</span><br><span class="line"></span><br><span class="line">im = rgb2gray(data.coffee())</span><br><span class="line">im = resize(im, (<span class="number">64</span>,<span class="number">64</span>))</span><br><span class="line">print(im.shape)</span><br><span class="line"></span><br><span class="line">plt.axis(<span class="string">'off'</span>)</span><br><span class="line">plt.imshow(im, cmap = <span class="string">'gray'</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">#卷积核</span></span><br><span class="line">filter1 = np.array([</span><br><span class="line">    [ <span class="number">1</span>,  <span class="number">1</span>,  <span class="number">1</span>],</span><br><span class="line">    [ <span class="number">0</span>,  <span class="number">0</span>,  <span class="number">0</span>],</span><br><span class="line">    [<span class="number">-1</span>, <span class="number">-1</span>, <span class="number">-1</span>]</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line">new_image = np.zeros(im.shape)</span><br><span class="line"></span><br><span class="line"><span class="comment">#np.pad是填充函数，是说在边缘填充常数1.</span></span><br><span class="line"><span class="comment">#pad(array, pad_width, mode, **kwargs)pad_width——表示每个轴（axis）边缘需要填充的数值数目</span></span><br><span class="line"><span class="comment">#这里忽略pad_width，我想原因是已经通过resize定义好im的维度。</span></span><br><span class="line"></span><br><span class="line">im_pad = np.pad(im, <span class="number">1</span>, <span class="string">'constant'</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(im.shape[<span class="number">0</span>]):</span><br><span class="line">    <span class="keyword">for</span> j <span class="keyword">in</span> range(im.shape[<span class="number">1</span>]):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            new_image[i,j] = \</span><br><span class="line">            im_pad[i<span class="number">-1</span>,j<span class="number">-1</span>] * filter1[<span class="number">0</span>,<span class="number">0</span>] + \</span><br><span class="line">            im_pad[i<span class="number">-1</span>,j] * filter1[<span class="number">0</span>,<span class="number">1</span>] + \</span><br><span class="line">            im_pad[i<span class="number">-1</span>,j+<span class="number">1</span>] * filter1[<span class="number">0</span>,<span class="number">2</span>] + \</span><br><span class="line">            im_pad[i,j<span class="number">-1</span>] * filter1[<span class="number">1</span>,<span class="number">0</span>] + \</span><br><span class="line">            im_pad[i,j] * filter1[<span class="number">1</span>,<span class="number">1</span>] + \</span><br><span class="line">            im_pad[i,j+<span class="number">1</span>] * filter1[<span class="number">1</span>,<span class="number">2</span>] +\</span><br><span class="line">            im_pad[i+<span class="number">1</span>,j<span class="number">-1</span>] * filter1[<span class="number">2</span>,<span class="number">0</span>] + \</span><br><span class="line">            im_pad[i+<span class="number">1</span>,j] * filter1[<span class="number">2</span>,<span class="number">1</span>] + \</span><br><span class="line">            im_pad[i+<span class="number">1</span>,j+<span class="number">1</span>] * filter1[<span class="number">2</span>,<span class="number">2</span>] </span><br><span class="line">        <span class="keyword">except</span>:</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">plt.axis(<span class="string">'off'</span>)</span><br><span class="line">plt.imshow(new_image, cmap=<span class="string">'Greys'</span>);</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="Batch-Normalization"><a href="#Batch-Normalization" class="headerlink" title="Batch Normalization"></a>Batch Normalization</h2><p>深度神经网络必须要保证网络中的系数保持在合理范围之内，否则<em>梯度爆炸or梯度消失</em>。<br>因此引入<strong>Batch Normalization：求出每个input channel的均值和方差，然后相当于对数据进行预处理（标准化），以防梯度爆炸/消失</strong>。<br><img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9pbWd2aWRlb2ZvcmJsb2cub3NzLWNuLXNoYW5naGFpLmFsaXl1bmNzLmNvbS8yJUU1JTlCJUJFOC5wbmc?x-oss-process=image/format,png" alt="8"><br>注意到最后一个式子scale and shift，其实是一种“<strong>逆向重构</strong>”，即标准化之后，用两个系数gamma和beta（需被训练）来逆向重构，从而使BN方法<em>不影响数据的表征</em>。<br>注意：gamma和beta需训练学习而得，但mean和std是属于数据特征，是nontrainable parameter.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">BatchNormalization(momentum=<span class="number">0.9</span>)</span><br><span class="line"><span class="comment">#这个momentum系数是指，给之前的Batch中得到的参数的权重，衡量着历史的mean和std对当前batch的影响。</span></span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="Dropout-Layers"><a href="#Dropout-Layers" class="headerlink" title="Dropout Layers"></a>Dropout Layers</h2><p>训练数据过多或训练次数过少，容易引发“<em>过拟合</em>”，而我们的缓解方法可以是<em>正则化（罚函数）</em>。</p>
+<p>但更常见的是<strong>Dropout层，即随机选择一些神经元，将它们的输出设为0</strong>.</p>
+<p>dropout层不需要训练任何参数，而且仅仅在训练的时候来dropout（帮助模型更鲁棒）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Dropout(rate = <span class="number">0.25</span>)</span><br></pre></td></tr></table></figure>
+
+<p>其实很多时候不需要dropout，而仅仅依靠BN也能缓解过拟合。</p>
+<ul>
+<li>将代码putting it all together（<strong>口诀BAD</strong>）<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">input_layer = Input(shape=(<span class="number">32</span>,<span class="number">32</span>,<span class="number">3</span>))</span><br><span class="line">x = Conv2D(</span><br><span class="line">                filters = <span class="number">10</span></span><br><span class="line">                ,kernel_size=(<span class="number">4</span>,<span class="number">4</span>)</span><br><span class="line">                ,strides = <span class="number">2</span></span><br><span class="line">                ,padding = <span class="string">'same'</span></span><br><span class="line">                )(input_layer)</span><br><span class="line">x = BatchNormalization()(x)</span><br><span class="line">x = LeakyReLU()(x)</span><br><span class="line"></span><br><span class="line">x = Conv2D(</span><br><span class="line">                filters = <span class="number">20</span></span><br><span class="line">                ,kernel_size=(<span class="number">3</span>,<span class="number">3</span>)</span><br><span class="line">                ,strides = <span class="number">2</span></span><br><span class="line">                ,padding = <span class="string">'same'</span></span><br><span class="line">                )(x)</span><br><span class="line">x = BatchNormalization()(x)</span><br><span class="line">x = LeakyReLU()(x)</span><br><span class="line"></span><br><span class="line">flatten_layer = Flatten()(x) <span class="comment">#必须要Flatten后才能传给Dense</span></span><br><span class="line"></span><br><span class="line">x = Dense(<span class="number">128</span>)(x)</span><br><span class="line"><span class="comment">#口诀BAD</span></span><br><span class="line">x = BatchNormalization()(x)</span><br><span class="line">x = LeakyReLU()(x)</span><br><span class="line">x = Dropout(rate = <span class="number">0.5</span>)(x)</span><br><span class="line"></span><br><span class="line">x = Dense(NUM_CLASSES)(x)</span><br><span class="line">output_layer = Activation(<span class="string">'softmax'</span>)(x)</span><br><span class="line"></span><br><span class="line">model = Model(input_layer, output_layer)</span><br></pre></td></tr></table></figure>
+对一个神经网络之后的处理可以记成口诀：<br><strong>BAD（BatchNormalization, Activation, then Dropout)</strong></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/01/14/DeepLearning/" data-id="ck5d1upp600004f6c1mlfcgdd"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/GenerativeDeepLearing/" rel="tag">GenerativeDeepLearing</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/01/12/Genarative-Modeling/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">Genarative_Modeling</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
