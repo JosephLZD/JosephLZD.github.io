@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    房价预测实践 |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-房价预测实践" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      房价预测实践
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/02/05/%E6%88%BF%E4%BB%B7%E9%A2%84%E6%B5%8B%E5%AE%9E%E8%B7%B5/" class="article-date">
+  <time datetime="2020-02-05T09:10:00.000Z" itemprop="datePublished">2020-02-05</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>《动手学深度学习pytorch版》之“房价预测”项目实践</p>
+<a id="more"></a>
+
+<h1 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h1><p>比赛数据分为训练数据集和测试数据集。两个数据集都包括每栋房子的特征，如街道类型、建造年份、房顶类型、地下室状况等特征值。这些特征值有连续的数字、离散的标签甚至是缺失值“na”。只有训练数据集包括了每栋房子的价格，也就是标签。</p>
+<p>我们将通过pandas库读入并处理数据。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line">sys.path.append(<span class="string">".."</span>) </span><br><span class="line"><span class="keyword">import</span> d2lzh_pytorch <span class="keyword">as</span> d2l</span><br><span class="line"></span><br><span class="line">print(torch.__version__)</span><br><span class="line">torch.set_default_tensor_type(torch.FloatTensor)</span><br></pre></td></tr></table></figure>
+<p>假设解压后的数据位于../../data/kaggle_house/目录，它包括两个csv文件。下面使用pandas读取这两个文件。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">train_data = pd.read_csv(<span class="string">'../../data/kaggle_house/train.csv'</span>)</span><br><span class="line">test_data = pd.read_csv(<span class="string">'../../data/kaggle_house/test.csv'</span>)</span><br></pre></td></tr></table></figure>
+
+<p>训练数据集包括1460个样本、80个特征和1个标签。<br>测试数据集包括1459个样本和80个特征。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">train_data.shape <span class="comment"># 输出 (1460, 81) #多一个标签项，即实际房价</span></span><br><span class="line">test_data.shape <span class="comment"># 输出 (1459, 80)</span></span><br></pre></td></tr></table></figure>
+<p>通过查看样本的部分特征，发现第一个特征是id，但是对于我们训练测试来说信息量为零，所以不使用这个特征，需要去掉这个特征，并且将训练数据和测试数据的后79个特征按样本连接。（为何要连接训练数据和测试数据？因为方便之后一并进行预处理）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">all_features = pd.concat( (train_data.iloc[:, <span class="number">1</span>:<span class="number">-1</span>], test_data.iloc[:, <span class="number">1</span>:]) )</span><br><span class="line"><span class="comment">#注意这里：由于训练数据的最后一个特征是标签(房价)，我们这里只想拼接第一个之后的特征，所以1:-1，也就是除开了第0个特征id 和第-1个标签。</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>concat</strong>：拼接函数，没什么太难的，但需要注意的是由于第一个参数是objs，之后很多参数是省略了的，所以这里objs作为整体，要用括号括起来。</p>
+<p><strong>loc和iloc</strong>：对numpy数组进行索引提取。 区别在于，loc可以用实际设置的索引和列名来提取，而<em>iloc只能用整数下标</em>来提取。一般来说，要选取连续多行多列的都用.iloc。</p>
+</blockquote>
+<h1 id="预处理"><a href="#预处理" class="headerlink" title="预处理"></a>预处理</h1><h2 id="标准化"><a href="#标准化" class="headerlink" title="标准化"></a>标准化</h2><p>1) 我们首先对连续数值的特征做<strong>标准化</strong>（standardization）：设该特征在整个数据集上的均值为μ，标准差为σ。那么，我们可以将该特征的每个值先减去μ再除以σ得到标准化后的每个特征值。对于缺失的特征值，我们将其替换成该特征的均值。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">numeric_features = all_features.dtypes[all_features.dtypes != <span class="string">'object'</span>].index <span class="comment">#提取所有下标。这里为了避免报错，所以判断了一下可行的行。</span></span><br><span class="line">all_features[numeric_features] = all_features[numeric_features].apply(</span><br><span class="line">    <span class="keyword">lambda</span> x: (x - x.mean()) / (x.std())) <span class="comment">#对这些数据进行标准化。</span></span><br><span class="line"><span class="comment"># 标准化后，每个数值特征的均值变为0，所以可以直接用0来替换缺失值（本是该特征中均值的，标准化后=0）</span></span><br><span class="line">all_features[numeric_features] = all_features[numeric_features].fillna(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>apply和lambda配合使用：将lambda x:的计算式应用上去。注意apply默认是axis=0即以列为单位，这里正好就是以一个特征为单位。<br>fillna(a)：将NA值以a填充。</p>
+</blockquote>
+<p>2) 接下来<strong>将离散数值转成指示特征</strong>。举个例子，假设特征MSZoning里面有两个不同的离散值RL和RM（不是数字，不好搞！），那么这一步转换将去掉MSZoning特征，并新加两个特征MSZoning_RL和MSZoning_RM，其值为0或1。（这就是所谓的one hot形式）。如果一个样本原来在MSZoning里的值为RL，那么有MSZoning_RL=1且MSZoning_RM=0。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">all_features = pd.get_dummies(all_features, dummy_na= <span class="literal">True</span>) <span class="comment"># dummy_na=True将缺失值也当作合法的特征值并为其创建指示特征</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>pandas.get_dummies(data, prefix=None, prefix_sep=’_’, dummy_na=False, columns=None, sparse=False, drop_first=False)<br><br>data : array-like, Series, or DataFrame<br>输入的数据<br>prefix : string, list of strings, or dict of strings, default None，是get_dummies转换后，列名的前缀<br>columns : list-like, default None，指定需要实现类别转换的列名<br>dummy_na : bool, default False，增加一列表示空缺值，如果False就忽略空缺值<br>drop_first : bool, default False，获得k中的k-1个类别值，去除第一个<br><br>我的理解就是：对于特征值不是数字或是离散数值的时候，我们需要把它转化为one-hot形式，即等于衍生出多了属性“特征=某特征值”，若=该特征值，则这个属性的值为1，否则为0.</p>
+</blockquote>
+<p><code>all_features.shape #(2919, 331)</code>可以看到这一步转换将特征数从79增加到了331。</p>
+<p>3） 最后，通过values属性得到NumPy格式的数据，并转成Tensor方便后面的训练。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">n_train = train_data.shape[<span class="number">0</span>]</span><br><span class="line">train_features = torch.tensor(all_features[:n_train].values, dtype=torch.float)</span><br><span class="line">test_features = torch.tensor(all_features[n_train:].values, dtype=torch.float)</span><br><span class="line">train_labels = torch.tensor(train_data.SalePrice.values, dtype=torch.float).view(<span class="number">-1</span>, <span class="number">1</span>) <span class="comment">#单独把标签提取出来作一个labels数组，which在原来的数据集里是和特征合在一起的。</span></span><br></pre></td></tr></table></figure>
+<br>
+
+<h1 id="训练模型"><a href="#训练模型" class="headerlink" title="训练模型"></a>训练模型</h1><p>我们使用一个基本的线性回归模型和平方损失函数来训练模型。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">loss = torch.nn.MSELoss()</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_net</span><span class="params">(feature_num)</span>:</span></span><br><span class="line">    net = nn.Linear(feature_num, <span class="number">1</span>)</span><br><span class="line">    <span class="keyword">for</span> param <span class="keyword">in</span> net.parameters():</span><br><span class="line">        nn.init.normal_(param, mean=<span class="number">0</span>, std=<span class="number">0.01</span>)</span><br><span class="line">    <span class="keyword">return</span> net</span><br></pre></td></tr></table></figure>
+<p>下面定义比赛用来评价模型的对数均方根误差。<br><strong>可是为啥我有平方差损失函数了，还要整个官方给的损失函数？</strong>你要区分开，平方差损失函数使我们自己定义，专门给模型训练优化、梯度下降用的。而官方给的这个损失函数，是测试你最终模型的效果的，你可以训练完一个epoch之后用其来测效果作参考。<br>它的定义为：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-05%20%E4%B8%8B%E5%8D%884.33.11.png" alt="alt"><br>哎呀说白了，其实就是最小二乘法误差里面，先取个对数再相减，最外面再套个根号。<br>对数均方根误差的实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">log_rmse</span><span class="params">(net, features, labels)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">        <span class="comment"># 将小于1的值设成1，使得取对数时数值更稳定</span></span><br><span class="line">        clipped_preds = torch.max(net(features), torch.tensor(<span class="number">1.0</span>))</span><br><span class="line">        rmse = torch.sqrt(<span class="number">2</span> * loss(clipped_preds.log(), labels.log()).mean())</span><br><span class="line">    <span class="keyword">return</span> rmse.item()</span><br><span class="line"><span class="comment">#自带的RMSE函数即loss函数是在最后除以了2的，所以这里乘上2，最外面再开平方根。</span></span><br></pre></td></tr></table></figure>
+<br>
+
+<p>下面的训练函数跟本章中前几节的不同在于使用了Adam优化算法。相对之前使用的小批量随机梯度下降，它对学习率相对不那么敏感。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train</span><span class="params">(net, train_features, train_labels, test_features, test_labels, num_epochs, learning_rate, weight_decay, batch_size)</span>:</span></span><br><span class="line">    train_ls, test_ls = [], []</span><br><span class="line">    dataset = torch.utils.data.TensorDataset(train_features, train_labels)</span><br><span class="line">    train_iter = torch.utils.data.DataLoader(dataset, batch_size, shuffle=<span class="literal">True</span>)</span><br><span class="line">    <span class="comment">#这里用的Adam优化算法</span></span><br><span class="line">    optimizer = torch.nn.optim.Adam(params=net.parameters(), lr=learning_rate, weight_decay=weight_decay)</span><br><span class="line">    net = net.float()</span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> range(num_epochs):</span><br><span class="line">        <span class="keyword">for</span> X,y <span class="keyword">in</span> train_iter:</span><br><span class="line">            l = loss(net(X.float()), y.float()) <span class="comment">#训练模型用的损失函数</span></span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            l.backward()</span><br><span class="line">            optimizer.step()</span><br><span class="line">        <span class="comment">#每训练完一个epoch</span></span><br><span class="line">        train_ls.append(log_rmse(net, train_features, train_labels)) <span class="comment">#官方损失函数测效果</span></span><br><span class="line">        <span class="keyword">if</span> test_labels <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            test_ls.append(log_rmse(net, test_features, test_labels))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> train_ls, test_ls</span><br></pre></td></tr></table></figure>
+<br>
+
+<h1 id="模型选择"><a href="#模型选择" class="headerlink" title="模型选择"></a>模型选择</h1><p>这种比赛性质的，模型选择要费很大功夫，而我们之前提到，要验证所选不同模型的效果，一般用到验证集，而且常用K折交叉验证，更加准确平均地来看该模型的效果。</p>
+<h2 id="K折交叉验证"><a href="#K折交叉验证" class="headerlink" title="K折交叉验证"></a>K折交叉验证</h2><p>下面实现了一个函数，它返回第i折交叉验证时所需要的训练和验证数据。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_k_fold_data</span><span class="params">(k, i, X, y)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> K&gt;<span class="number">1</span> </span><br><span class="line">    X_train, Y_train = <span class="literal">None</span>, <span class="literal">None</span> <span class="comment">#初始化</span></span><br><span class="line">    <span class="keyword">for</span> j <span class="keyword">in</span> range(k): <span class="comment">#分成k份，遍历每一份，选择第i份作为验证集，其余k-1份作为训练集</span></span><br><span class="line">        idx = slice(j*fold_size, (j+<span class="number">1</span>)*fold_size) </span><br><span class="line">        <span class="comment">#截取这一份特征和对应的标签</span></span><br><span class="line">        X_part, Y_part = X[idx,:], Y[idx] </span><br><span class="line">        <span class="keyword">if</span> j==i: <span class="comment">#作为验证集</span></span><br><span class="line">            X_valid, Y_valid = X_part, Y_part</span><br><span class="line">        <span class="keyword">elif</span> X_train <span class="keyword">is</span> <span class="literal">None</span>: <span class="comment">#还没开始构造训练集</span></span><br><span class="line">            X_train, Y_train = X_part, Y_part</span><br><span class="line">        <span class="keyword">else</span>: <span class="comment">#已经开始构造训练集了，把这一份加上去</span></span><br><span class="line">            X_train = torch.cat((X_train, X_part), dim=<span class="number">0</span>) <span class="comment">#列上面连接</span></span><br><span class="line">            y_train = torch.cat((y_train, y_part), dim=<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> X_train, y_train, X_valid, y_valid</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>slice函数：slice(start, stop)，结果是start到stop之间的数字。<br>cat函数：cat((X1,X2), dim=0)，在列上连接X1和X2.</p>
+</blockquote>
+<p>在K折交叉验证中我们训练K次并返回训练和验证的平均误差。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">k_fold</span><span class="params">(k, X_train, y_train, num_epochs,</span></span></span><br><span class="line"><span class="function"><span class="params">           learning_rate, weight_decay, batch_size)</span>:</span></span><br><span class="line">    train_l_sum, valid_l_sum = <span class="number">0</span>, <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(k):</span><br><span class="line">        data = get_k_fold_data(k, i, X_train, y_train)</span><br><span class="line">        net = get_net(X_train.shape[<span class="number">1</span>])</span><br><span class="line">        train_ls, valid_ls = train(net, *data, num_epochs, learning_rate,</span><br><span class="line">                                   weight_decay, batch_size)</span><br><span class="line">        train_l_sum += train_ls[<span class="number">-1</span>]</span><br><span class="line">        valid_l_sum += valid_ls[<span class="number">-1</span>]</span><br><span class="line">        <span class="keyword">if</span> i == <span class="number">0</span>:</span><br><span class="line">            d2l.semilogy(range(<span class="number">1</span>, num_epochs + <span class="number">1</span>), train_ls, <span class="string">'epochs'</span>, <span class="string">'rmse'</span>,</span><br><span class="line">                         range(<span class="number">1</span>, num_epochs + <span class="number">1</span>), valid_ls,</span><br><span class="line">                         [<span class="string">'train'</span>, <span class="string">'valid'</span>])</span><br><span class="line">        print(<span class="string">'fold %d, train rmse %f, valid rmse %f'</span> % (i, train_ls[<span class="number">-1</span>], valid_ls[<span class="number">-1</span>]))</span><br><span class="line">    <span class="keyword">return</span> train_l_sum / k, valid_l_sum / k</span><br></pre></td></tr></table></figure>
+<p>我们使用一组未经调优的超参数并计算交叉验证误差。可以改动这些超参数来尽可能减小平均测试误差。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">k, num_epochs, lr, weight_decay, batch_size = <span class="number">5</span>, <span class="number">100</span>, <span class="number">5</span>, <span class="number">0</span>, <span class="number">64</span></span><br><span class="line">train_l, valid_l = k_fold(k, train_features, train_labels, num_epochs, lr, weight_decay, batch_size)</span><br><span class="line">print(<span class="string">'%d-fold validation: avg train rmse %f, avg valid rmse %f'</span> % (k, train_l, valid_l))</span><br></pre></td></tr></table></figure>
+<p>有时候你会发现一组参数的训练误差可以达到很低，但是在K折交叉验证上的误差可能反而较高。这种现象很可能是由过拟合造成的。因此，当训练误差降低时，我们要观察K折交叉验证上的误差是否也相应降低。</p>
+<h1 id="预测"><a href="#预测" class="headerlink" title="预测"></a>预测</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train_and_pred</span><span class="params">(train_features, test_features, train_labels, test_data,</span></span></span><br><span class="line"><span class="function"><span class="params">                   num_epochs, lr, weight_decay, batch_size)</span>:</span></span><br><span class="line">    net = get_net(train_features.shape[<span class="number">1</span>])</span><br><span class="line">    train_ls, _ = train(net, train_features, train_labels, <span class="literal">None</span>, <span class="literal">None</span>,</span><br><span class="line">                        num_epochs, lr, weight_decay, batch_size)</span><br><span class="line">    d2l.semilogy(range(<span class="number">1</span>, num_epochs + <span class="number">1</span>), train_ls, <span class="string">'epochs'</span>, <span class="string">'rmse'</span>)</span><br><span class="line">    print(<span class="string">'train rmse %f'</span> % train_ls[<span class="number">-1</span>])</span><br><span class="line">    preds = net(test_features).detach().numpy()</span><br><span class="line">    test_data[<span class="string">'SalePrice'</span>] = pd.Series(preds.reshape(<span class="number">1</span>, <span class="number">-1</span>)[<span class="number">0</span>])</span><br><span class="line">    submission = pd.concat([test_data[<span class="string">'Id'</span>], test_data[<span class="string">'SalePrice'</span>]], axis=<span class="number">1</span>)</span><br><span class="line">    submission.to_csv(<span class="string">'./submission.csv'</span>, index=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<p>设计好模型并调好超参数之后，下一步就是对测试数据集上的房屋样本做价格预测。如果我们得到与交叉验证时差不多的训练误差，那么这个结果很可能是理想的，可以在Kaggle上提交结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">train_and_pred(train_features, test_features, train_labels, test_data, num_epochs, lr, weight_decay, batch_size)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">train rmse <span class="number">0.229943</span></span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/05/%E6%88%BF%E4%BB%B7%E9%A2%84%E6%B5%8B%E5%AE%9E%E8%B7%B5/" data-id="ck693f52w00009q6c94am0zuv"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8A%A8%E6%89%8B%E5%AD%A6%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">动手学深度学习</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/02/05/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E6%A6%82%E5%BF%B5%E6%B8%A9%E4%B9%A0/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">机器学习概念温习</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
