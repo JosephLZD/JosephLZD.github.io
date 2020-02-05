@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    机器学习概念温习 |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-机器学习概念温习" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      机器学习概念温习
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/02/05/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E6%A6%82%E5%BF%B5%E6%B8%A9%E4%B9%A0/" class="article-date">
+  <time datetime="2020-02-05T07:19:23.000Z" itemprop="datePublished">2020-02-05</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>《动手学深度学习pytorch版》中关于机器学习的一些基础概念，温故知新。</p>
+<a id="more"></a>
+<h1 id="过拟合、欠拟合"><a href="#过拟合、欠拟合" class="headerlink" title="过拟合、欠拟合"></a>过拟合、欠拟合</h1><h2 id="误差"><a href="#误差" class="headerlink" title="误差"></a>误差</h2><p>误差分为：训练误差和泛化误差。<br>前者是针对训练集的，后者是针对测试集的。</p>
+<h2 id="模型选择"><a href="#模型选择" class="headerlink" title="模型选择"></a>模型选择</h2><p>在机器学习中，通常需要评估若干候选模型的表现并从中选择模型。这一过程称为模型选择（model selection）。<br>可供选择的候选模型可以是有着不同超参数的同类模型。以多层感知机为例，我们可以选择隐藏层的个数，以及每个隐藏层中隐藏单元个数和激活函数。为了得到有效的模型，我们通常要在模型选择上下一番功夫。</p>
+<h2 id="验证集"><a href="#验证集" class="headerlink" title="验证集"></a>验证集</h2><p>这里引入概念：<strong>验证集</strong>(validation data set)。<br>之前其实我一直不怎么分得清楚验证集和测试集的概念，今天终于明白了：</p>
+<blockquote>
+<p><strong>验证集是用于模型选择的。</strong></p>
+</blockquote>
+<p><strong>为什么不用训练集或测试集来选择模型？</strong><br>因为，从严格意义上讲，测试集只能在所有超参数和模型参数选定后使用一次。不可以使用测试数据选择模型，如调参。由于无法从训练误差估计泛化误差，因此也不应只依赖训练数据选择模型。</p>
+<h2 id="K折交叉验证"><a href="#K折交叉验证" class="headerlink" title="K折交叉验证"></a>K折交叉验证</h2><p>所以，接下来，你大概能进一步猜出“K折交叉验证”的含义了吧？之前都模模糊糊的，这下知道了：<br><strong>做K次模型训练和验证，通过这K次的误差结果取平均，从而更准确地表示所选择的这个模型的效果，且这K次中每次使用的验证集和训练集不同。</strong></p>
+<p>更详细的解释：</p>
+<blockquote>
+<p>由于验证数据集不参与模型训练，当训练数据不够用时，预留大量的验证数据显得太奢侈。一种改善的方法是KK折交叉验证（K-fold<br>cross-validation）。在K折交叉验证中，我们把原始训练数据集分割成K个不重合的子数据集，然后我们做K次模型训练和验证。每一次，我们使用一个子数据集验证模型，并使用其他K−1个子数据集来训练模型。在这K次训练和验证中，每次用来验证模型的子数据集都不同。最后，我们对这K次训练误差和验证误差分别求平均。</p>
+</blockquote>
+<h2 id="过拟合"><a href="#过拟合" class="headerlink" title="过拟合"></a>过拟合</h2><p>过拟合：训练数据过少或训练次数过多，导致模型的训练误差远小于它在测试数据集上的误差。</p>
+<p>给定训练数据集，如果<strong>模型的复杂度</strong>过低，很容易出现欠拟合；如果模型复杂度过高，很容易出现过拟合。应对欠拟合和过拟合的一个办法是针对数据集选择合适复杂度的模型。</p>
+<h1 id="权重衰减"><a href="#权重衰减" class="headerlink" title="权重衰减"></a>权重衰减</h1><p>权重衰减是干嘛用的？是为了<strong>减轻过拟合</strong>的。<br>其实就相当于“<strong>正则化</strong>”，即在损失函数中增加一个“惩罚项”，使得系数不会过大。</p>
+<p>L2范数正则化在模型原损失函数基础上添加L2范数惩罚项，从而得到训练所需要最小化的函数。L2范数惩罚项指的是模型权重参数<em>每个元素的平方和与一个正的常数的乘积</em>。</p>
+<h1 id="丢弃法"><a href="#丢弃法" class="headerlink" title="丢弃法"></a>丢弃法</h1><p>除了前一节介绍的权重衰减以外，深度学习模型常常使用丢弃法（dropout）来应对过拟合问题。丢弃法有一些不同的变体。本节中提到的丢弃法特指<strong>倒置丢弃法（inverted dropout）</strong>。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>这里刷新了我的认识，即dropout不仅仅是简单地以一定概率丢弃隐藏层的部分神经元，而是<strong>要么“隐藏”，要么“拉伸”！</strong><br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-05%20%E4%B8%8B%E5%8D%881.19.00.png" alt="alt"><br>根据期望计算，分子=0<em>p+1</em>(1-p)=1-p，所以<strong>丢弃法不改变其输入的期望值</strong>。</p>
+<p>由于在训练中隐藏层神经元的丢弃是随机的，即h1,…,h5都有可能被清零，输出层的计算无法过度依赖h1,…,h5中的任一个，从而在训练模型时起到<strong>正则化的作用</strong>，并可以用来应对过拟合。在测试模型时，我们为了拿到更加确定性的结果，一般不使用丢弃法。</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><h3 id="从零开始"><a href="#从零开始" class="headerlink" title="从零开始"></a>从零开始</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line">sys.path.append(<span class="string">".."</span>) </span><br><span class="line"><span class="keyword">import</span> d2lzh_pytorch <span class="keyword">as</span> d2l</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">dropout</span><span class="params">(X, drop_prob)</span>:</span> <span class="comment">#输入数据， 丢弃概率</span></span><br><span class="line">    X = X.float()</span><br><span class="line">    <span class="keyword">assert</span> <span class="number">0</span> &lt;= drop_prob &lt;= <span class="number">1</span> <span class="comment">#断言语句判断</span></span><br><span class="line">    keep_prob = <span class="number">1</span> - drop_prob</span><br><span class="line">    <span class="comment">#这种情况下把全部元素都丢弃</span></span><br><span class="line">    <span class="keyword">if</span> keep_prob == <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">return</span> torch.zero_like(X)</span><br><span class="line">    <span class="comment">#否则，生成相同维度的随机数矩阵，若&lt;1-p则认为是要保留。这样便可以手动模拟概率事件。</span></span><br><span class="line">    mask = (torch.rand(X.shape) &lt; keep_prob).float() <span class="comment">#细节：广播机制+转换成小数0或1</span></span><br><span class="line">    <span class="keyword">return</span> mask * X / keep_prob <span class="comment">#丢弃法公式，丢弃或拉伸</span></span><br></pre></td></tr></table></figure>
+<br> 
+
+<p><strong>1.定义参数</strong><br>同之前的，注意参数维度+设置成可导</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">num_inputs, num_outputs, num_hiddens1, num_hiddens2 = <span class="number">784</span>, <span class="number">10</span>, <span class="number">256</span>, <span class="number">256</span></span><br><span class="line"></span><br><span class="line">W1 = torch.tensor(np.random.normal(<span class="number">0</span>, <span class="number">0.01</span>, size=(num_inputs, num_hiddens1)), dtype=torch.float, requires_grad=<span class="literal">True</span>)</span><br><span class="line">b1 = torch.zeros(num_hiddens1, requires_grad=<span class="literal">True</span>)</span><br><span class="line">W2 = torch.tensor(np.random.normal(<span class="number">0</span>, <span class="number">0.01</span>, size=(num_hiddens1, num_hiddens2)), dtype=torch.float, requires_grad=<span class="literal">True</span>)</span><br><span class="line">b2 = torch.zeros(num_hiddens2, requires_grad=<span class="literal">True</span>)</span><br><span class="line">W3 = torch.tensor(np.random.normal(<span class="number">0</span>, <span class="number">0.01</span>, size=(num_hiddens2, num_outputs)), dtype=torch.float, requires_grad=<span class="literal">True</span>)</span><br><span class="line">b3 = torch.zeros(num_outputs, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">params = [W1, b1, W2, b2, W3, b3]</span><br><span class="line"><span class="keyword">for</span> param <span class="keyword">in</span> params:</span><br><span class="line">    param.requires_grad_(<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+
+<Br>
+
+<p><strong>2.定义模型</strong><br>下面定义的模型将全连接层和激活函数ReLU串起来，并对每个激活函数的输出使用丢弃法。<br>注意：<strong>只在训练时使用丢弃法</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">drop_prob1, drop_prob2 = <span class="number">0.2</span>, <span class="number">0.5</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">net</span><span class="params">(X, is_training=True)</span>:</span> <span class="comment">#这里添加一个参数is_training</span></span><br><span class="line">    X = X.view(<span class="number">-1</span>, num_inputs)</span><br><span class="line">    H1 = (torch.matmul(X, W1) + b1).relu()</span><br><span class="line">    <span class="keyword">if</span> is_training:  <span class="comment"># 只在训练模型时使用丢弃法</span></span><br><span class="line">        H1 = dropout(H1, drop_prob1)  <span class="comment"># 在第一层全连接后添加丢弃层</span></span><br><span class="line">        </span><br><span class="line">    H2 = (torch.matmul(H1, W2) + b2).relu()</span><br><span class="line">    <span class="keyword">if</span> is_training:</span><br><span class="line">        H2 = dropout(H2, drop_prob2)  <span class="comment"># 在第二层全连接后添加丢弃层</span></span><br><span class="line">        </span><br><span class="line">    <span class="keyword">return</span> torch.matmul(H2, W3) + b3</span><br></pre></td></tr></table></figure>
+<Br>
+
+<p>我们在对模型评估的时候不应该进行丢弃，所以我们修改一下d2lzh_pytorch中的evaluate_accuracy函数:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本函数已保存在d2lzh_pytorch</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">evaluate_accuracy</span><span class="params">(data_iter, net)</span>:</span></span><br><span class="line">    acc_sum, n = <span class="number">0.0</span>, <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> X, y <span class="keyword">in</span> data_iter:</span><br><span class="line">        <span class="keyword">if</span> isinstance(net, torch.nn.Module): <span class="comment">#简洁实现时</span></span><br><span class="line">            net.eval() <span class="comment"># 评估模式, 这会关闭dropout</span></span><br><span class="line">            acc_sum += (net(X).argmax(dim=<span class="number">1</span>) == y).float().sum().item()</span><br><span class="line">            net.train() <span class="comment"># 改回训练模式</span></span><br><span class="line">            </span><br><span class="line">        <span class="keyword">else</span>: <span class="comment"># 从零实现手动自定义的模型</span></span><br><span class="line">            <span class="keyword">if</span>(<span class="string">'is_training'</span> <span class="keyword">in</span> net.__code__.co_varnames): <span class="comment"># 如果有is_training这个参数</span></span><br><span class="line">                <span class="comment"># 将is_training设置成False</span></span><br><span class="line">                acc_sum += (net(X, is_training=<span class="literal">False</span>).argmax(dim=<span class="number">1</span>) == y).float().sum().item() </span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                acc_sum += (net(X).argmax(dim=<span class="number">1</span>) == y).float().sum().item() </span><br><span class="line">        n += y.shape[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">return</span> acc_sum / n</span><br></pre></td></tr></table></figure>
+<br>
+
+<p><strong>3.训练测试</strong><br>这部分与之前多层感知机的训练和测试类似。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">num_epochs, lr, batch_size = <span class="number">5</span>, <span class="number">100.0</span>, <span class="number">256</span></span><br><span class="line">loss = torch.nn.CrossEntropyLoss()</span><br><span class="line">train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size)</span><br><span class="line">d2l.train_ch3(net, train_iter, test_iter, loss, num_epochs, batch_size, params, lr)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">epoch <span class="number">1</span>, loss <span class="number">0.0044</span>, train acc <span class="number">0.574</span>, test acc <span class="number">0.648</span></span><br><span class="line">epoch <span class="number">2</span>, loss <span class="number">0.0023</span>, train acc <span class="number">0.786</span>, test acc <span class="number">0.786</span></span><br><span class="line">epoch <span class="number">3</span>, loss <span class="number">0.0019</span>, train acc <span class="number">0.826</span>, test acc <span class="number">0.825</span></span><br><span class="line">epoch <span class="number">4</span>, loss <span class="number">0.0017</span>, train acc <span class="number">0.839</span>, test acc <span class="number">0.831</span></span><br><span class="line">epoch <span class="number">5</span>, loss <span class="number">0.0016</span>, train acc <span class="number">0.849</span>, test acc <span class="number">0.850</span></span><br></pre></td></tr></table></figure>
+
+<br>
+
+<h3 id="简洁实现"><a href="#简洁实现" class="headerlink" title="简洁实现"></a>简洁实现</h3><p>采用torch.nn.Dropout(drop_prob)直接一句实现。<br>我们只需要在全连接层后的激活函数后增加Dropout层。在测试模型时（即model.eval()后），Dropout层不会发生作用。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 定义模型</span></span><br><span class="line"><span class="comment"># 注：这里定义两个隐藏层</span></span><br><span class="line">net = nn.Sequential(</span><br><span class="line">        d2l.FlattenLayer(),</span><br><span class="line">        nn.Linear(num_inputs, num_hiddens1),</span><br><span class="line">        nn.ReLU(),</span><br><span class="line">        nn.Dropout(drop_prob1),</span><br><span class="line"></span><br><span class="line">        nn.Linear(num_hiddens1, num_hiddens2),</span><br><span class="line">        nn.ReLU(),</span><br><span class="line">        nn.Dropout(drop_prob2),</span><br><span class="line">        </span><br><span class="line">        nn.Linear(num_hiddens2, <span class="number">10</span>)</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line"><span class="comment">#定义参数</span></span><br><span class="line"><span class="keyword">for</span> param <span class="keyword">in</span> net.parameters():</span><br><span class="line">    nn.init.normal_(param, mean=<span class="number">0</span>, std=<span class="number">0.01</span>)</span><br></pre></td></tr></table></figure>
+<br>
+
+<h1 id="正-反向传播"><a href="#正-反向传播" class="headerlink" title="正/反向传播"></a>正/反向传播</h1><h2 id="正向传播"><a href="#正向传播" class="headerlink" title="正向传播"></a>正向传播</h2><p>正向传播是指对神经网络沿着从输入层到输出层的顺序，依次计算并存储模型的中间变量（包括输出）。</p>
+<h2 id="反向传播"><a href="#反向传播" class="headerlink" title="反向传播"></a>反向传播</h2><p>反向传播指计算神经网络参数梯度的方法。反向传播依照导数的链式法则，沿着从输出层到输入层的顺序，以此计算参数的梯度。</p>
+<p><strong>正向传播与反向传播相互依赖</strong>：<br>正向传播的计算依赖于模型参数的当前值，而这些当前值是反向传播迭代更新得到的。<br>反向传播的计算依赖于模型参数的当前值，而这些当前值是通过正向传播依公式计算出来的。</p>
+<p>在模型参数初始化完成后，我们交替地进行正向传播和反向传播，并根据反向传播计算的梯度迭代模型参数。既然我们在反向传播中使用了正向传播中计算得到的中间变量来避免重复计算，那么这个复用也导致<strong>正向传播结束后不能立即释放中间变量内存。这也是训练要比预测占用更多内存的一个重要原因</strong>。另外需要指出的是，这些中间变量的个数大体上与网络层数线性相关，每个变量的大小跟批量大小和输入个数也是线性相关的，它们是导致较深的神经网络使用较大批量训练时更容易超内存的主要原因。<br><Br></p>
+<h1 id="数值稳定性"><a href="#数值稳定性" class="headerlink" title="数值稳定性"></a>数值稳定性</h1><p><strong>1）随机初始化模型参数</strong><br>如果将每个隐藏单元的参数都初始化为相等的值，那么在正向传播时每个隐藏单元将根据相同的输入计算出相同的值，并传递至输出层。在反向传播中，每个隐藏单元的参数梯度值相等。因此，这些参数在使用基于梯度的优化算法迭代后值依然相等。之后的迭代也是如此。在这种情况下，无论隐藏单元有多少，隐藏层本质上只有1个隐藏单元在发挥作用。因此，正如在前面的实验中所做的那样，我们通常将神经网络的模型参数，特别是权重参数，进行随机初始化。</p>
+<p>2）Xavier随机初始化<br>还有一种比较常用的随机初始化方法叫作Xavier随机初始化[1]。 假设某全连接层的输入个数为aa，输出个数为bb，Xavier随机初始化将使该层中权重参数的每个元素都随机采样于均匀分布。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-05%20%E4%B8%8B%E5%8D%883.17.38.png" alt="alt"><br>它的设计主要考虑到，模型参数初始化后，每层输出的方差不该受该层输入个数影响，且每层梯度的方差也不该受该层输出个数影响。</p>
+<p>[1] Glorot, X., &amp; Bengio, Y. (2010, March). Understanding the difficulty of training deep feedforward neural networks. In Proceedings of the thirteenth international conference on artificial intelligence and statistics (pp. 249-256).</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/05/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E6%A6%82%E5%BF%B5%E6%B8%A9%E4%B9%A0/" data-id="ck68zihfl0000cf6cadxx4peq"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8A%A8%E6%89%8B%E5%AD%A6%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">动手学深度学习</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/02/04/%E5%A4%9A%E5%B1%82%E6%84%9F%E7%9F%A5%E6%9C%BA/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">多层感知机</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
