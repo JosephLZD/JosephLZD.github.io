@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    深度学习计算 |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-深度学习计算" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      深度学习计算
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/02/06/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E8%AE%A1%E7%AE%97/" class="article-date">
+  <time datetime="2020-02-06T13:39:11.000Z" itemprop="datePublished">2020-02-06</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>《动手学深度学习pytorch版》“深度学习计算”一章学习笔记。</p>
+<a id="more"></a>
+
+<h1 id="模型构造"><a href="#模型构造" class="headerlink" title="模型构造"></a>模型构造</h1><p>除了之前的Sequential类构造多层神经网络外，这里用一种更灵活的方法：基于Module类的模型构造方法。</p>
+<p>Module类是nn模块里提供的一个模型构造类，是所有神经网络模块的基类，我们可以继承它来定义我们想要的模型。</p>
+<p>这里定义的MLP类重载了Module类的<strong>init</strong>函数和forward函数。它们分别用于定义模型参数和定义前向计算。前向计算也即正向传播。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MLP</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="comment">#重写__init__和forward函数</span></span><br><span class="line">    <span class="comment">#__init__函数相当于构造函数，内容主要是设置好每层网络的功能</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, **kwargs)</span>:</span></span><br><span class="line">        <span class="comment">#调用父类，必要的初始化</span></span><br><span class="line">        super(MLP, self).__init__(**kwargs)</span><br><span class="line">        self.hidden = nn.Linear(<span class="number">784</span>, <span class="number">256</span>) <span class="comment">#隐藏层</span></span><br><span class="line">        self.act = nn.ReLU()</span><br><span class="line">        self.output = nn.Linear(<span class="number">256</span>, <span class="number">10</span>)<span class="comment">#输出层</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">#定义正向传播，即如何根据输入计算得到模型的输出</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, x)</span>:</span></span><br><span class="line">        a = self.act(self.hidden(x))</span><br><span class="line">        <span class="keyword">return</span> self.output(a)</span><br></pre></td></tr></table></figure>
+
+<p>然后，<strong>实例化</strong>定义好的MLP模型类，得到模型实例net：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net = MLP()</span><br></pre></td></tr></table></figure>
+<p>然后，输入数据X，net(X)会调用MLP继承自Module类的<strong>call</strong>函数，这个函数将调用MLP类定义的forward函数来完成前向计算。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net(X)</span><br></pre></td></tr></table></figure>
+<br>
+注意，这里并没有将Module类命名为Layer（层）或者Model（模型）之类的名字，这是因为该类是一个可供自由组建的部件。它的子类既可以是一个层（如PyTorch提供的Linear类），又可以是一个模型（如这里定义的MLP类），或者是模型的一个部分。我们下面通过两个例子来展示它的灵活性。
+
+<h1 id="Module的子类"><a href="#Module的子类" class="headerlink" title="Module的子类"></a>Module的子类</h1><p>既然我们可以继承nn.Module来定义神经网络模型，那么，在内容上可以有不同的定义方法。</p>
+<h2 id="Sequential"><a href="#Sequential" class="headerlink" title="Sequential"></a>Sequential</h2><p>此方法约等于直接用Sequential函数即：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">net = Sequential(</span><br><span class="line">        nn.Linear(<span class="number">784</span>, <span class="number">256</span>),</span><br><span class="line">        nn.ReLU(),</span><br><span class="line">        nn.Linear(<span class="number">256</span>, <span class="number">10</span>),</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+<p>但区别在于，Sequential函数本来就是按顺序来排列网络层的，所以相当于已经<strong>自动具备了顺序的forward函数</strong>（ps:所以要依次注意网络层输入的维度）！而用继承nn.Module自行来实现MySequential的话需要手动重写forward函数。<br><Br></p>
+<p><strong>MySequential类的创建方法</strong>：继承nn.Module，主要运用OrderdDict即有序字典来以此加入网络层进行初始化模型定义以及正向传播。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MySequential</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="keyword">from</span> collections <span class="keyword">import</span> OrderedDict</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, *args)</span>:</span></span><br><span class="line">        super(MySequential, self).__init__()</span><br><span class="line">        <span class="keyword">if</span> len(args)==<span class="number">1</span> <span class="keyword">and</span> isinstance(args[<span class="number">0</span>], OrderdDict): <span class="comment">#若传入的是一个ordereddict</span></span><br><span class="line">            <span class="keyword">for</span> key, module <span class="keyword">in</span> args[<span class="number">0</span>].items(): <span class="comment">#提取每个元素</span></span><br><span class="line">                self.add_module(key, module) </span><br><span class="line">        <span class="keyword">else</span>: <span class="comment">#传入的是一些Module</span></span><br><span class="line">            <span class="keyword">for</span> idx, module <span class="keyword">in</span> enumerate(args):</span><br><span class="line">                self.add_module(str(idx),module)</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, input)</span>:</span></span><br><span class="line">        <span class="comment">#用定义好的module来依次处理</span></span><br><span class="line">        <span class="keyword">for</span> module <span class="keyword">in</span> self._modules.values():</span><br><span class="line">            input = module(input)</span><br><span class="line">        <span class="keyword">return</span> input</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>· add_module(key, module)方法自动添加该module进self.module中。<br>· for idx, a in enumerate(A) :很常见的枚举遍历写法，idx是每个元素在A中的序号。</p>
+</blockquote>
+<p>实例化（注：这可以直接写几个Module如下；也可传入一个OrderedDict作为参数）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">net = MySequential(</span><br><span class="line">        nn.Linear(<span class="number">784</span>, <span class="number">256</span>),</span><br><span class="line">        nn.ReLU(),</span><br><span class="line">        nn.Linear(<span class="number">256</span>, <span class="number">10</span>),</span><br><span class="line">    )</span><br><span class="line">net(X)</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="ModuleList"><a href="#ModuleList" class="headerlink" title="ModuleList"></a>ModuleList</h2><p>ModuleList接收一个子模块的列表作为输入，然后也可以类似List那样进行append和extend操作:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">net = nn.ModuleList([nn.Linear(<span class="number">784</span>, <span class="number">256</span>), nn.ReLU()])</span><br><span class="line">net.append(nn.Linear(<span class="number">256</span>, <span class="number">10</span>))</span><br></pre></td></tr></table></figure>
+<p>注意：ModuleList仅仅是<strong>一个储存各种模块的列表</strong>，这些模块之间没有联系也没有顺序（所以不用保证相邻层的输入输出维度匹配），而且没有实现forward功能需要自己实现。<br>ModuleList的出现只是让网络<strong>定义前向传播时更加灵活</strong>，见下面官网的例子。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyModule</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        super(MyModule, self).__init__()</span><br><span class="line">        self.linears = nn.ModuleList([nn.Linear(<span class="number">10</span>, <span class="number">10</span>) <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>)])</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, x)</span>:</span></span><br><span class="line">        <span class="comment"># ModuleList can act as an iterable, or be indexed using ints</span></span><br><span class="line">        <span class="keyword">for</span> i, l <span class="keyword">in</span> enumerate(self.linears):</span><br><span class="line">            x = self.linears[i // <span class="number">2</span>](x) + l(x)</span><br><span class="line">        <span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+
+<h2 id="ModuleDict"><a href="#ModuleDict" class="headerlink" title="ModuleDict"></a>ModuleDict</h2><p>ModuleDict接收一个子模块的字典作为输入, 然后也可以类似字典那样进行添加访问操作:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">net = nn.ModuleDict(</span><br><span class="line">    &#123;<span class="string">'linear'</span>:nn.Linear(<span class="number">784</span>,<span class="number">256</span>), <span class="string">'act'</span>:nn.ReLU(),&#125;</span><br><span class="line">    )</span><br><span class="line"><span class="comment">#添加</span></span><br><span class="line">net[<span class="string">'output'</span>] = nn.Linear(<span class="number">256</span>, <span class="number">10</span>)</span><br></pre></td></tr></table></figure>
+<p>同ModuleList，这只是一种在创建模型类的时候定义网络层的方法，需要自己定义forward函数。</p>
+<h2 id="复杂模型"><a href="#复杂模型" class="headerlink" title="复杂模型"></a>复杂模型</h2><p>虽然Sequential等类可以使模型构造更加简单，但直接继承Module类可以极大地拓展模型构造的灵活性，主要体现在forward前向传播上。</p>
+<p>下面我们构造一个稍微复杂点的网络FancyMLP。<br>在这个网络中，我们创建训练中不被迭代的参数，即常数参数。在前向计算中，除了使用创建的常数参数外，我们还使用Tensor的函数和Python的控制流，并多次调用相同的层。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">FancyMLP</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, **kwargs)</span>:</span></span><br><span class="line">        super(FancyMLP, self).__init__(**kwargs)</span><br><span class="line">        self.rand_weight = torch.rand((<span class="number">20</span>,<span class="number">20</span>), requires_grad=<span class="literal">False</span>) <span class="comment">#不参与迭代的常量参数</span></span><br><span class="line">        self.linear = nn.Linear(<span class="number">20</span>,<span class="number">20</span>)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, x)</span>:</span></span><br><span class="line">        x = self.linear(x)</span><br><span class="line">        <span class="comment"># 使用创建的常数参数，以及nn.functional中的relu函数和torch.mm函数</span></span><br><span class="line">        x = nn.functional.relu(torch.mm(x, self.rand_weight.data) + <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment">#复用全连接层。等价于两个全连接层共享参数。</span></span><br><span class="line">        x = self.linear(x)</span><br><span class="line">        <span class="comment">#控制流，这里我们需要调用item函数来返回标量进行比较</span></span><br><span class="line">        <span class="keyword">while</span> x.norm().item() &gt; <span class="number">1</span>:</span><br><span class="line">            x /= <span class="number">2</span></span><br><span class="line">        <span class="keyword">if</span> x.norm().item() &lt; <span class="number">0.8</span>:</span><br><span class="line">            x *= <span class="number">10</span></span><br><span class="line">        <span class="keyword">return</span> x.sum()</span><br></pre></td></tr></table></figure>
+
+<p>这里就忽略实例化看效果的过程了。</p>
+<p>因为FancyMLP和Sequential类都是Module类的子类，所以我们可以<strong>嵌套调用</strong>它们。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">NestMLP</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, **kwargs)</span>:</span></span><br><span class="line">        super(NestMLP, self).__init__(**kwargs)</span><br><span class="line">        self.net = nn.Sequential(nn.Linear(<span class="number">40</span>, <span class="number">30</span>), nn.ReLU()) </span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, x)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.net(x)</span><br><span class="line"></span><br><span class="line"><span class="comment">#注意 这里调用传入的是module要实例化</span></span><br><span class="line">net = nn.Sequential(NestMLP(), nn.Linear(<span class="number">30</span>, <span class="number">20</span>), FancyMLP()) <span class="comment">#Sequential里包括了：继承nn.Module创建的模型类NestMLP和FancyMLP的实例。</span></span><br><span class="line"></span><br><span class="line">X = torch.rand(<span class="number">2</span>, <span class="number">40</span>)</span><br><span class="line">print(net)</span><br><span class="line">net(X)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Sequential(</span><br><span class="line">  (<span class="number">0</span>): NestMLP(</span><br><span class="line">    (net): Sequential(</span><br><span class="line">      (<span class="number">0</span>): Linear(in_features=<span class="number">40</span>, out_features=<span class="number">30</span>, bias=<span class="literal">True</span>)</span><br><span class="line">      (<span class="number">1</span>): ReLU()</span><br><span class="line">    )</span><br><span class="line">  )</span><br><span class="line">  (<span class="number">1</span>): Linear(in_features=<span class="number">30</span>, out_features=<span class="number">20</span>, bias=<span class="literal">True</span>)</span><br><span class="line">  (<span class="number">2</span>): FancyMLP(</span><br><span class="line">    (linear): Linear(in_features=<span class="number">20</span>, out_features=<span class="number">20</span>, bias=<span class="literal">True</span>)</span><br><span class="line">  )</span><br><span class="line">)</span><br><span class="line">tensor(<span class="number">14.4908</span>, grad_fn=&lt;SumBackward0&gt;)</span><br></pre></td></tr></table></figure>
+
+<h1 id="模型参数"><a href="#模型参数" class="headerlink" title="模型参数"></a>模型参数</h1><h2 id="定义参数"><a href="#定义参数" class="headerlink" title="定义参数"></a>定义参数</h2><p>可以通过parameters()和named_parameters()访问实例化后的模型类的参数，区别在于：前者返回tensor规模，后者还<strong>同时返回对应的“层名”</strong>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">print(type(net.named_parameters()))</span><br><span class="line"><span class="keyword">for</span> name, param <span class="keyword">in</span> net.named_parameters():</span><br><span class="line">    print(name, param.size())</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;<span class="class"><span class="keyword">class</span> '<span class="title">generator</span>'&gt;</span></span><br><span class="line"><span class="class">0.<span class="title">weight</span> <span class="title">torch</span>.<span class="title">Size</span><span class="params">([<span class="number">3</span>, <span class="number">4</span>])</span></span></span><br><span class="line"><span class="class">0.<span class="title">bias</span> <span class="title">torch</span>.<span class="title">Size</span><span class="params">([<span class="number">3</span>])</span></span></span><br><span class="line"><span class="class">2.<span class="title">weight</span> <span class="title">torch</span>.<span class="title">Size</span><span class="params">([<span class="number">1</span>, <span class="number">3</span>])</span></span></span><br><span class="line"><span class="class">2.<span class="title">bias</span> <span class="title">torch</span>.<span class="title">Size</span><span class="params">([<span class="number">1</span>])</span></span></span><br></pre></td></tr></table></figure>
+
+<p>如果在定义模型类中，使用<strong>nn.Parameter</strong>函数，则其实这是Tensor的子类，和Tensor不同的是如果一个Tensor是Parameter，那么它会自动被添加到模型的参数列表里。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyModel</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, **kwargs)</span>:</span></span><br><span class="line">        super(MyModel, self).__init__(**kwargs)</span><br><span class="line">        self.weight1 = nn.Parameter(torch.rand(<span class="number">20</span>, <span class="number">20</span>)) <span class="comment">#自动加入网络中作为参数。</span></span><br><span class="line">        self.weight2 = torch.rand(<span class="number">20</span>, <span class="number">20</span>)</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, x)</span>:</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">n = MyModel()</span><br><span class="line"><span class="keyword">for</span> name, param <span class="keyword">in</span> n.named_parameters():</span><br><span class="line">    print(name)</span><br></pre></td></tr></table></figure>
+<p>上面的代码中weight1在参数列表中但是weight2却没在参数列表中。</p>
+<p>因为Parameter是Tensor，即Tensor拥有的属性它都有，<strong>比如可以用.data来访问参数数值，用.grad来访问参数梯度。</strong></p>
+<Br>
+
+<p>这里还有两个方法可以用来定义参数：ParameterList和ParameterDict分别定义参数的列表和字典。</p>
+<ul>
+<li><code>ParameterList</code>接收一个Parameter实例的列表作为输入然后得到一个参数列表，使用的时候可以用索引来访问某个参数，另外也可以使用append和extend在列表后面新增参数。</li>
+<li><code>ParameterDict</code>接收一个Parameter实例的字典作为输入然后得到一个参数字典，然后可以按照字典的规则使用了。例如使用update()新增参数，使用keys()返回所有键值，使用items()返回所有键值对等等，可参考官方文档。<br>
+
+</li>
+</ul>
+<h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>之前用过了，比如将权重参数初始化成均值为0、标准差为0.01的正态分布随机数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> name, param <span class="keyword">in</span> net.named_parameters():</span><br><span class="line">    <span class="keyword">if</span> <span class="string">'weight'</span> <span class="keyword">in</span> name: <span class="comment">#如果该参数带'weight'</span></span><br><span class="line">        init.normal_(param, mean=<span class="number">0</span>, std=<span class="number">0.01</span>)</span><br><span class="line">        print(name, param.data)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0.</span>weight tensor([[ <span class="number">0.0030</span>,  <span class="number">0.0094</span>,  <span class="number">0.0070</span>, <span class="number">-0.0010</span>],</span><br><span class="line">        [ <span class="number">0.0001</span>,  <span class="number">0.0039</span>,  <span class="number">0.0105</span>, <span class="number">-0.0126</span>],</span><br><span class="line">        [ <span class="number">0.0105</span>, <span class="number">-0.0135</span>, <span class="number">-0.0047</span>, <span class="number">-0.0006</span>]])</span><br><span class="line"><span class="number">2.</span>weight tensor([[<span class="number">-0.0074</span>,  <span class="number">0.0051</span>,  <span class="number">0.0066</span>]])</span><br></pre></td></tr></table></figure>
+
+<p>初始化偏差值为常数0：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> name, param <span class="keyword">in</span> net.named_parameters():</span><br><span class="line">    <span class="keyword">if</span> <span class="string">'bias'</span> <span class="keyword">in</span> name:</span><br><span class="line">        init.constant_(param, value=<span class="number">0</span>)</span><br><span class="line">        print(name, param.data)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0.</span>bias tensor([<span class="number">0.</span>, <span class="number">0.</span>, <span class="number">0.</span>])</span><br><span class="line"><span class="number">2.</span>bias tensor([<span class="number">0.</span>])</span><br></pre></td></tr></table></figure>
+
+<p>如果想要修改参数的值而不改变梯度的话，可以<strong>自定义初始化方法</strong>。<br>很简单，其实就是加一个<code>with torch.no_grad()</code>再处理或者用<code>.data</code>修改数据。<br><br></p>
+<h2 id="共享参数"><a href="#共享参数" class="headerlink" title="共享参数"></a>共享参数</h2><p>之前提到了如何共享模型参数: Module类的forward函数里多次调用同一个层。<br>此外，如果我们传入Sequential的模块是同一个Module实例的话参数也是共享的，如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">linear = nn.Linear(<span class="number">1</span>, <span class="number">1</span>, bias=<span class="literal">False</span>)</span><br><span class="line">net = nn.Sequential(linear, linear)  <span class="comment">#传入的是同一个实例化出来的东西，当然这两层共享了参数。</span></span><br><span class="line">print(net)</span><br><span class="line"><span class="keyword">for</span> name, param <span class="keyword">in</span> net.named_parameters():</span><br><span class="line">    init.constant_(param, val=<span class="number">3</span>)</span><br><span class="line">    print(name, param.data)</span><br></pre></td></tr></table></figure>
+
+<h1 id="读取和存储"><a href="#读取和存储" class="headerlink" title="读取和存储"></a>读取和存储</h1><h2 id="save-load"><a href="#save-load" class="headerlink" title="save/load"></a>save/load</h2><p>我们可以直接使用<code>torch.save</code>函数和<code>torch.load</code>函数分别存储和读取Tensor。</p>
+<ul>
+<li>存储：save使用Python的pickle实用程序将对象进行序列化，然后将序列化的对象保存到disk，使用save可以保存各种对象,包括<em>模型、张量和字典</em>等。</li>
+<li>读取：load使用pickle unpickle工具将pickle的对象文件反序列化为内存。</li>
+</ul>
+<p>下面的例子创建了Tensor变量x，并将其存在文件名同为x.pt的文件里。<br><strong>注意到这里文件都是用.pt结尾！</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line">x = torch.ones(<span class="number">3</span>)</span><br><span class="line">torch.save(x, <span class="string">'x.pt'</span>) <span class="comment">#存储到x.pt文件</span></span><br></pre></td></tr></table></figure>
+<p>然后我们将数据从存储的文件读回内存。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x2 = torch.load(<span class="string">'x.pt'</span>)</span><br><span class="line">x2</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tensor([<span class="number">1.</span>, <span class="number">1.</span>, <span class="number">1.</span>])</span><br></pre></td></tr></table></figure>
+<p>同理，对于Tensor和Dict都适用。</p>
+<br>
+
+<h2 id="读写模型"><a href="#读写模型" class="headerlink" title="读写模型"></a>读写模型</h2><p>可以通过<code>state_dict()</code>来查看模型中的可学习参数，字典形式返回：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">optimizer = torch.optim.SGD(net.parameters(), lr=<span class="number">0.001</span>, momentum=<span class="number">0.9</span>)</span><br><span class="line">optimizer.state_dict()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">'param_groups'</span>: [&#123;<span class="string">'dampening'</span>: <span class="number">0</span>,</span><br><span class="line">   <span class="string">'lr'</span>: <span class="number">0.001</span>,</span><br><span class="line">   <span class="string">'momentum'</span>: <span class="number">0.9</span>,</span><br><span class="line">   <span class="string">'nesterov'</span>: <span class="literal">False</span>,</span><br><span class="line">   <span class="string">'params'</span>: [<span class="number">4736167728</span>, <span class="number">4736166648</span>, <span class="number">4736167368</span>, <span class="number">4736165352</span>],</span><br><span class="line">   <span class="string">'weight_decay'</span>: <span class="number">0</span>&#125;],</span><br><span class="line"> <span class="string">'state'</span>: &#123;&#125;&#125;</span><br></pre></td></tr></table></figure>
+<br>
+
+<p>那么怎样保存模型呢？其实实质是：保存模型参数。</p>
+<p>1）save模型参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.save(model.state_dict(), <span class="string">'file.pt'</span>) <span class="comment">#推荐的文件后缀名是.pt或.pth</span></span><br></pre></td></tr></table></figure>
+<p>2）load模型参数：<br>调用<code>model.load_state_dict(torch.load(文件名))</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">model = TheModelClass(*args, **kwargs)</span><br><span class="line">model.load_state_dict(torch.load(<span class="string">'file.pt'</span>))</span><br></pre></td></tr></table></figure>
+
+<h1 id="GPU计算"><a href="#GPU计算" class="headerlink" title="GPU计算"></a>GPU计算</h1><p>鉴于目前用不上GPU，跳过学习。书中介绍详见<a href="https://tangshusen.me/Dive-into-DL-PyTorch/#/chapter04_DL_computation/4.6_use-gpu" target="_blank" rel="noopener">https://tangshusen.me/Dive-into-DL-PyTorch/#/chapter04_DL_computation/4.6_use-gpu</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/06/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E8%AE%A1%E7%AE%97/" data-id="ck6asfwsw0000h66c36u471wi"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8A%A8%E6%89%8B%E5%AD%A6%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">动手学深度学习</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/02/05/%E6%88%BF%E4%BB%B7%E9%A2%84%E6%B5%8B%E5%AE%9E%E8%B7%B5/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">房价预测实践</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
