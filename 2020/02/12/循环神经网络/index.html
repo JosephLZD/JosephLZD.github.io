@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    循环神经网络 |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-循环神经网络" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      循环神经网络
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/02/12/%E5%BE%AA%E7%8E%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/" class="article-date">
+  <time datetime="2020-02-12T14:23:13.000Z" itemprop="datePublished">2020-02-12</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>《动手学深度学习pytorch版》“循环神经网络”学习笔记。</p>
+<a id="more"></a>
+<p>语言模型说白了就是词出现概率的计算，以及一个词在给定前几个词的情况下的条件概率。<br>我们常说的n-1阶马尔科夫链便是n元语法，其概率语言模型为：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-09%20%E4%B8%8B%E5%8D%889.15.34.png" alt="alt"></p>
+<p>当n较小时，n元语法往往并不准确。例如，在一元语法中，由三个词组成的句子“你走先”和“你先走”的概率是一样的。<br>然而，当n较大时，n元语法需要计算并存储大量的词频和多词相邻频率。</p>
+<p>那么，有没有方法在语言模型中更好地平衡以上这两点呢？我们将在本章探究这样的方法。</p>
+<h1 id="循环神经网络"><a href="#循环神经网络" class="headerlink" title="循环神经网络"></a>循环神经网络</h1><p>刚刚我们提到，n元语法中n权衡着计算复杂度和模型精确度。我们知道，n肯定越大，效果越好，但是计算复杂度我们承受不了。</p>
+<p>本节将介绍循环神经网络。它并非刚性地记忆所有固定长度的序列，而是<strong>通过隐藏状态来存储之前时间步的信息</strong>。</p>
+<p><em>我的理解：把文本看成一串时间序列，当前输入Xt运算得到当前状态Ht，将Ht做线性运算得到当前输出Ot。然后，将Ht运用到H(t+1)的计算中。（而其实Ht的计算也是用了H(t-1)的，所以这其实是循环计算，故名循环神经网络）。</em></p>
+<p>计算当前状态Ht：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-09%20%E4%B8%8B%E5%8D%889.30.59.png" alt="alt"><br>计算当前输出Ot：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-09%20%E4%B8%8B%E5%8D%889.31.34.png" alt="alt"></p>
+<p>下图展现了循环神经网络在3个相邻时间步的计算逻辑。注意输出层的格子即Ot。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-09%20%E4%B8%8B%E5%8D%889.32.37.png" alt="alt"><br><br></p>
+<h1 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h1><p>我们用字符级循环神经网络来实践一个“创作周杰伦歌词”的项目。字符级循环神经网络，顾名思义，就是输入以字符为单位。</p>
+<h2 id="读数据"><a href="#读数据" class="headerlink" title="读数据"></a>读数据</h2><p>首先读取这个数据集，看看前40个字符是什么样的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"><span class="keyword">import</span> zipfile</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> zipfile.ZipFile(<span class="string">'../../data/jaychou_lyrics.txt.zip'</span>) <span class="keyword">as</span> zin:</span><br><span class="line">    <span class="keyword">with</span> zin.open(<span class="string">'jaychou_lyrics.txt'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        corpus_chars = f.read().decode(<span class="string">'utf-8'</span>)</span><br><span class="line">corpus_chars[:<span class="number">40</span>]</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">'想要有直升机\n想要和你飞到宇宙去\n想要和你融化在一起\n融化在宇宙里\n我每天每天每'</span></span><br></pre></td></tr></table></figure>
+<p>这个数据集有6万多个字符。为了打印方便，我们把换行符替换成空格，然后仅使用前1万个字符来训练模型。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">corpus_chars = corpus_chars.replace(<span class="string">'\n'</span>, <span class="string">' '</span>).replace(<span class="string">'\r'</span>, <span class="string">' '</span>)</span><br><span class="line">corpus_chars = corpus_chars[<span class="number">0</span>:<span class="number">10000</span>]</span><br></pre></td></tr></table></figure>
+
+<h2 id="建索引"><a href="#建索引" class="headerlink" title="建索引"></a>建索引</h2><p>这里有个很秀的地方——建立字符索引。我们将每个字符映射成一个从0开始的连续整数，又称索引，来方便之后的数据处理。<br>接着，打印vocab_size，即词典中不同字符的个数，又称词典大小。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">idx_to_char = list(set(corpus_chars))</span><br><span class="line">char_to_idx = dict([(char,i) <span class="keyword">for</span> i,char <span class="keyword">in</span> enumerate(idx_to_char)]) <span class="comment">#用enumerate来取索引建字典</span></span><br><span class="line">vocab_size = len(char_to_idx) <span class="comment">#看看索引个数</span></span><br><span class="line">vocab_size <span class="comment">#1027</span></span><br></pre></td></tr></table></figure>
+<p>之后，将训练数据集中每个字符转化为索引，并打印前20个字符及其对应的索引。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">corpus_indices = [ char_to_idx[char] <span class="keyword">for</span> char <span class="keyword">in</span> corpus_chars ] <span class="comment">#注意最外的中括号，因为得到的是数组</span></span><br><span class="line">print(<span class="string">'chars:'</span>, <span class="string">' '</span>.join([idx_to_char[i] <span class="keyword">for</span> i <span class="keyword">in</span> sample]))</span><br><span class="line">print(<span class="string">'indices:'</span>, sample)</span><br></pre></td></tr></table></figure>
+<p>这里<code>&#39; &#39;.join(something)</code>的用法，是由于something是用了内置for得到的几个元素，所以用join方法进行<em>拼接</em>，分隔符是’ ‘即一个空格。返回的是字符串！</p>
+<blockquote>
+<p>语法：  ‘sep’.join(seq)<br>参数说明<br>sep：分隔符。可以为空<br>seq：要连接的元素序列、字符串、元组、字典<br>上面的语法即：以sep作为分隔符，将seq所有的元素合并成一个新的字符串<br>返回值：返回一个以分隔符sep连接各个元素后生成的<strong>字符串</strong></p>
+</blockquote>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chars: 想要有直升机 想要和你飞到宇宙去 想要和</span><br><span class="line">indices: [<span class="number">250</span>, <span class="number">164</span>, <span class="number">576</span>, <span class="number">421</span>, <span class="number">674</span>, <span class="number">653</span>, <span class="number">357</span>, <span class="number">250</span>, <span class="number">164</span>, <span class="number">850</span>, <span class="number">217</span>, <span class="number">910</span>, <span class="number">1012</span>, <span class="number">261</span>, <span class="number">275</span>, <span class="number">366</span>, <span class="number">357</span>, <span class="number">250</span>, <span class="number">164</span>, <span class="number">850</span>]</span><br></pre></td></tr></table></figure>
+<Br>
+
+<h2 id="采样方法"><a href="#采样方法" class="headerlink" title="采样方法"></a>采样方法</h2><p>在训练中我们需要每次随机读取小批量样本和标签。与之前章节的实验数据不同的是，时序数据的一个样本通常包含连续的字符。假设时间步数为5，样本序列为5个字符，即“想”“要”“有”“直”“升”。该样本的标签序列为这些字符分别在训练集中的下一个字符，即“要”“有”“直”“升”“机”。<br><strong>也就是，样本是当前一个字符，其对应标签为下一个字符！</strong></p>
+<p>我们有两种方式对<strong>时序数据</strong>进行采样，分别是<strong>随机采样和相邻采样。</strong></p>
+<h3 id="随机"><a href="#随机" class="headerlink" title="随机"></a>随机</h3><p> 在随机采样中，每个样本是原始序列上任意截取的<strong>一段序列</strong>。相邻的两个随机小批量在原始序列上的位置不一定相毗邻。因此，我们无法用一个小批量最终时间步的隐藏状态来初始化下一个小批量的隐藏状态。在训练模型时，每次随机采样前都需要重新初始化隐藏状态。</p>
+<p><em>这里要明确两个概念：<br>① 样本是一段文本序列，而小批量个样本组成一个小批量batch。而随机体现在打乱样本索引的顺序，到时候取batch则是小批量连续取样本索引，然后按索引读样本数据，最后yield。<br>② 一个字符样本的标签，是它下一个字符。即在取数据的时候将索引+1.</em></p>
+<p>依据以上两个概念，来实现随机采样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">data_iter_random</span><span class="params">(corpus_indices, batch_size, num_steps, device=None)</span>:</span></span><br><span class="line"><span class="comment">#参数含义依次为：样本中每个字符转换成数字的数据集；一个批量batch所包含的样本数；一个样本有多少个字符；device</span></span><br><span class="line">    num_examples = (len(corpus_indeces)<span class="number">-1</span>) // num_steps <span class="comment">#计算样本个数。-1是因为标签是当前的下一个字符，若不-1最后一个样本字符没有标签。</span></span><br><span class="line">    epoch_size = num_examples // batch_size <span class="comment">#计算batch数</span></span><br><span class="line">    example_indices = list(range(num_examples)) <span class="comment">#样本索引</span></span><br><span class="line">    random.shuffle(example_indices)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 返回从pos开始的长为num_steps的序列，即一个样本</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_data</span><span class="params">(pos)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> corpus_indices[pos: pos+num_steps]</span><br><span class="line"><span class="keyword">if</span> device <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">    device = torch.device(<span class="string">'cuda'</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">'cpu'</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#随机采样。因为数据已经以样本为单位shuffle过（这个过程体现在打乱样本的索引上），现在我就可以依次地从样本索引里取batch_size即一个小批量的样本，构建生成器返回一个batch的数据</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(epoch_size): <span class="comment">#共有epoch_size个小批量batch，依次取就好了</span></span><br><span class="line">    i = i * batch_size <span class="comment">#这里i改变不影响循环变量！</span></span><br><span class="line">    batch_indices = example_indices[i:i+batch_size] <span class="comment">#取一个batch的索引</span></span><br><span class="line">    <span class="comment">#接下来采用_data函数来取实际数据即可</span></span><br><span class="line">    <span class="comment">#训练集 (注意是多个样本数据，所以[]括起来表示数组)</span></span><br><span class="line">    X = [_data(j*num_steps) <span class="keyword">for</span> j <span class="keyword">in</span> batch_indices]</span><br><span class="line">    <span class="comment">#标签集 注意+1因为是训练集数据的下一个字符</span></span><br><span class="line">    Y = [_data(j*num_steps + <span class="number">1</span>) <span class="keyword">for</span> j <span class="keyword">in</span> batch_indices]</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#构建生成器 即依次地一个一个batch地返回</span></span><br><span class="line">    <span class="keyword">yield</span> torch.tensor(X, dtype=torch.float32, device=device), torch.tensor(Y, dtype=torch.float32, device=device)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>“ / “就表示 浮点数除法，返回浮点结果;<br>“ // “表示整数除法。</p>
+</blockquote>
+<blockquote>
+<p>在Python中，在for循环体内修改迭代变量的值，不影响迭代变量在for中的操作，这是和C/C++不同的！</p>
+</blockquote>
+<Br>
+
+<h3 id="相邻"><a href="#相邻" class="headerlink" title="相邻"></a>相邻</h3><p>除对原始序列做随机采样之外，我们还可以令相邻的两个随机小批量在原始序列上的位置相毗邻。这时候，我们就可以用一个小批量最终时间步的隐藏状态来初始化下一个小批量的隐藏状态，从而使下一个小批量的输出也取决于当前小批量的输入，并如此循环下去。</p>
+<p><em>这里必须要理解“相邻取样”的意思：<br>由于之前是随机取样，所以只需要在打乱样本索引，然后每次取batch_size长度个样本即可。<br>但这里相邻取样，要求更高。我们需要的是在“<strong>批量之间”相邻</strong>，从而可以将此批量的最终隐藏状态去初始化下一个批量的最终隐藏状态，而不是一个批量里的样本连续。<br>这里举个例子，展示相邻取样的两个batch结果，忽略Y，只看两个batch的X即样本：</em></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#第一个batch的X</span></span><br><span class="line">X:  tensor([[ <span class="number">0.</span>,  <span class="number">1.</span>,  <span class="number">2.</span>,  <span class="number">3.</span>,  <span class="number">4.</span>,  <span class="number">5.</span>],</span><br><span class="line">        [<span class="number">12.</span>, <span class="number">13.</span>, <span class="number">14.</span>, <span class="number">15.</span>, <span class="number">16.</span>, <span class="number">17.</span>]]) </span><br><span class="line"></span><br><span class="line"><span class="comment">#第二个batch的X</span></span><br><span class="line">X:  tensor([[ <span class="number">6.</span>,  <span class="number">7.</span>,  <span class="number">8.</span>,  <span class="number">9.</span>, <span class="number">10.</span>, <span class="number">11.</span>],</span><br><span class="line">        [<span class="number">18.</span>, <span class="number">19.</span>, <span class="number">20.</span>, <span class="number">21.</span>, <span class="number">22.</span>, <span class="number">23.</span>]])</span><br></pre></td></tr></table></figure>
+<p><strong>由此可知，相邻取样的意思是，每个batch中第i个样本是相邻连续的</strong>。<br>所以，实现相邻取样的代码逻辑是，将数据集reshape规模，所有batch的第i个样本为一行，一个batch则是取一个矩形的数据。如图所示：（注意图中012345即是一个样本<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/IMG_0393.jpg" alt="alt"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">data_iter_consecutive</span><span class="params">(corpus_indices, batch_size, num_steps, device=None)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> device <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        device = torch.device(<span class="string">'cuda'</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">'cpu'</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#先将样本数据变成张量</span></span><br><span class="line">    corpus_indices = torch.tensor(corpus_indices, dtype=torch.float32, device=device)</span><br><span class="line">    data_len = len(corpus_indices)</span><br><span class="line">    <span class="comment">#因为想把数据弄成：（batch_size，所有batch的第i个样本）</span></span><br><span class="line">    <span class="comment">#有可能不整除，所以先计算第i样本拼接在一起的长度batch_i_len</span></span><br><span class="line">    batch_i_len = data_len // batch_size</span><br><span class="line">    indices = corpus_indices[<span class="number">0</span> : batch_size*batch_i_len].view(batch_size, batch_i_len)</span><br><span class="line">    <span class="comment">#每个样本有num_steps个时间序列即长num_steps</span></span><br><span class="line">    <span class="comment">#我们此函数需要以一个batch为单位，返回数据X,Y</span></span><br><span class="line">    <span class="comment">#epoch_size:有多少个batch</span></span><br><span class="line">    epoch_size = (batch_i_len <span class="number">-1</span>) // num_steps</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(epoch_size):</span><br><span class="line">        i = i * num_steps</span><br><span class="line">        X = indices[:, i:i+num_steps]</span><br><span class="line">        Y = indices[:, i+<span class="number">1</span>:i+num_steps+<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">yield</span> X,Y</span><br></pre></td></tr></table></figure>
+<p>因为这里对数据预处理的data_iter在后面一直用到，要注意data_iter使用yield每次返回的是一个batch，这里必须要把维度关系画图讲清楚：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/data_iter%E7%BB%B4%E5%BA%A6.jpg" alt="alt"></p>
+<br>
+
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>时序数据采样方式包括随机采样和相邻采样。<br>由于涉及到批量之间用不用隐藏状态的传递，使用这两种方式的循环神经网络训练在实现上略有不同。</p>
+<Br>
+
+<h1 id="从零实现"><a href="#从零实现" class="headerlink" title="从零实现"></a>从零实现</h1><p>我们将从零开始实现一个基于字符级循环神经网络的语言模型，并在周杰伦专辑歌词数据集上训练一个模型来进行歌词创作。</p>
+<p>首先，我们读取周杰伦专辑歌词数据集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn, optim</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line">sys.path.append(<span class="string">".."</span>) </span><br><span class="line"><span class="keyword">import</span> d2lzh_pytorch <span class="keyword">as</span> d2l</span><br><span class="line">device = torch.device(<span class="string">'cuda'</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">'cpu'</span>)</span><br><span class="line"></span><br><span class="line">(corpus_indices, char_to_idx, idx_to_char, vocab_size) = d2l.load_data_jay_lyrics()</span><br></pre></td></tr></table></figure>
+
+<p>为了将字符表示成数值向量输入到神经网络，一个简单的办法是使用<strong>one-hot向量</strong>。如果一个字符的索引是整数i, 那么我们创建一个全0的长为N的向量，并将其位置为i的元素设成1，则该向量就是对原字符的one-hot向量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">one_hot</span><span class="params">(x, n_class, dtype=torch.float32)</span>:</span></span><br><span class="line"><span class="comment"># x是一个字符对应的数字；n_class指一共有多少种字符</span></span><br><span class="line">     x = x.long() <span class="comment">#将数字或字符串转换为一个长整型。</span></span><br><span class="line">     res = torch.zeros(x.shape[<span class="number">0</span>], n_class, dtype=dtype, device=x.device)</span><br><span class="line">     res.scatter_(<span class="number">1</span>, x.view(<span class="number">-1</span>,<span class="number">1</span>), <span class="number">1</span>)</span><br><span class="line">     <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>torch.tensor.scatter_(dim, index, value)<br>在dim维度上，根据index作为索引对tensor的相应位置进行value值填充，其余位置默认为0.</p>
+</blockquote>
+<p>这里dim=1一下点醒了我。。我之前都是死记硬背啊什么dim=1是在行上，不要这样记！dim=1的时候即在第一维上操作，第一维确实是列，所以它是在所有列上进行操作。</p>
+<p>接下来，我们要将样本数据都转化为这种形式。注意，刚刚实现的one_hot函数是针对一个字符索引转成one hot，而我们接下来要实现的是，<strong>将X样本集中的所有字符都转成one hot向量</strong>。<br><em>对于X样本数据，第i行则表示是batch的第i个样本，那么我们就按一列来取为一个时间序列，则one-hot化后，单个时间序列的矩阵维度为(batch_size, 字典长度)，矩阵个数等于时间步数。</em></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">to_onehot</span><span class="params">(X, n_class)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> [one_hot(X[:,i], n_class) <span class="keyword">for</span> i <span class="keyword">in</span> range(X.shape[<span class="number">1</span>])] <span class="comment">#一列一列依次转</span></span><br></pre></td></tr></table></figure>
+
+<br>
+
+<h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p><em>这里要声明一点，这里需要一个隐藏层也可以，不是说循环神经网络就是要在网络模型设计上有反馈，不是的。<br>所谓的循环，理解那个流程，其实是<strong>隐藏状态的延续利用</strong>，实际实现就是对上一个时间步的隐藏状态H进行记录，在后一次计算H时用到。</em></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#输入层、隐藏层、输出层的神经元</span></span><br><span class="line">num_inputs, num_hiddens, num_outputs = vocab_size, <span class="number">256</span>, vocab_size</span><br><span class="line"></span><br><span class="line"><span class="comment">#初始化模型参数</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_params</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="comment">#定义一个函数 传入规模 返回高斯分布初始化的tensor</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_one</span><span class="params">(shape)</span>:</span></span><br><span class="line">        ts = torch.tensor(np.random.normal(<span class="number">0</span>, <span class="number">0.01</span>, size=shape), device=device, dtype=torch.float32)</span><br><span class="line">        <span class="keyword">return</span> torch.nn.Parameter(ts, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">#隐藏层参数</span></span><br><span class="line">    W_xh = _one((num_inputs, num_hiddens))</span><br><span class="line">    W_hh = _one((num_hiddens, num_hiddens)) <span class="comment">#因为是与H相乘，而H维度即隐藏层神经元数</span></span><br><span class="line">    b_h = torch.nn.Parameter(torch.zeros(num_hiddens, device=device, requires_grad=<span class="literal">True</span>))</span><br><span class="line">    <span class="comment">#输出层参数</span></span><br><span class="line">    W_hq = _one((num_hiddens, num_outputs))</span><br><span class="line">    b_q = torch.nn.Parameter(torch.zeros(num_outpus, device=device, requires_grad=<span class="literal">True</span>))</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> nn.ParameterList([W_xh, W_hh, b_h, W_hq, b_q])</span><br></pre></td></tr></table></figure>
+
+<br>
+
+<h2 id="定义模型"><a href="#定义模型" class="headerlink" title="定义模型"></a>定义模型</h2><p>首先定义函数来<strong>初始化隐藏状态H</strong>，它返回由一个形状为(批量大小, 隐藏单元个数)的值为0的NDarray组成的元组，使用元组是为了更便于处理隐藏状态含有多个NDArray的情况。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">init_rnn_state</span><span class="params">(batch_size, num_hiddens, device)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> (torch.zeros((batch_size, num_hiddens), device=device), )</span><br></pre></td></tr></table></figure>
+
+<p>下面的rnn函数定义了在一个时间步里如何计算隐藏状态和输出。这里的激活函数使用了tanh函数。3.8节（多层感知机）中介绍过，当元素在实数域上均匀分布时，tanh函数值的均值为0。<br><em>这里的H是复用到下一个for循环的，因为inputs中的一个X矩阵即批量中所有样本的某个时间序列，而下一个X即批量中所有样本的下一个时间序列。</em></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">rnn</span><span class="params">(inputs, state, params)</span>:</span></span><br><span class="line">    W_xh, W_hh, b_h, W_hq, b_q = params</span><br><span class="line">    H, = state</span><br><span class="line">    outputs = []</span><br><span class="line">    <span class="keyword">for</span> X <span class="keyword">in</span> inputs: <span class="comment">#X为该batch中所有样本的某个时间序列</span></span><br><span class="line">        H = torch.tanh(torch.matmul(X, W_xh) + toch.matmul(H, W_hh) + b_h)</span><br><span class="line">        Y = torch.matmul(H, Whq) + b_q</span><br><span class="line">        outputs.append(Y) <span class="comment">#记录每个时间步的输出</span></span><br><span class="line">    <span class="keyword">return</span> outputs, (H,)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>逗号的使用：H,将变量转换成元组。<br>a = 1<br>b = a,<br>print(a)  #输出转变前：1<br>print(b)  #输出转变后：(1,)</p>
+</blockquote>
+<p>(重要：从维度来理解过程)做个简单的测试来观察输出结果的个数（时间步数），以及第一个时间步的输出层输出的形状和隐藏状态的形状。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">state = init_rnn_state(X.shape[<span class="number">0</span>], num_hiddens, device)</span><br><span class="line">inputs = to_onehot(X.to(device), vocab_size)</span><br><span class="line">params = get_params()</span><br><span class="line">outputs, state_new = rnn(inputs, state, params)</span><br><span class="line">print(len(outputs), outputs[<span class="number">0</span>].shape, state_new[<span class="number">0</span>].shape)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">5</span> torch.Size([<span class="number">2</span>, <span class="number">1027</span>]) torch.Size([<span class="number">2</span>, <span class="number">256</span>])</span><br></pre></td></tr></table></figure>
+<bR>
+
+<h2 id="预测函数"><a href="#预测函数" class="headerlink" title="预测函数"></a>预测函数</h2><p>定义预测函数.<br>以下函数基于前缀<strong>prefix（含有数个字符的字符串）</strong>来预测接下来的num_chars个字符。这个函数稍显复杂，其中我们将循环神经单元rnn设置成了函数参数，这样在后面小节介绍其他循环神经网络时能重复使用这个函数。<br><em>这里要注意，每个时间步的输出Y维度是（batch_size=1, vocab_size），即相当于也是得到一个one-hot向量，每个位置对应一个字符的置信度，相当于分类问题，最大置信度的那个类对应的标签在这里即下一个字符是啥。</em></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">predict_rnn</span><span class="params">(prefix, num_chars, rnn, params, init_rnn_state, num_hiddens, vocab_size, device, idx_to_char, char_to_idx)</span>:</span></span><br><span class="line"><span class="comment">#prefix前缀字符串，num_chars要预测的字符个数，rnn是循环神经单元，</span></span><br><span class="line"><span class="comment">#params模型参数，init_rnn_state是初始化隐藏状态H的函数，num_hiddnes隐藏层神经元个数，</span></span><br><span class="line"><span class="comment">#vocab_size是字典长度，device设备，idx_to_char是数值映射到字符的已生成的dict，char_to_idx是字符映射到数字的已生成的dict</span></span><br><span class="line">    state = init_rnn_state(<span class="number">1</span>, num_hiddens, device) <span class="comment">#batch_size=1 因为这个batch只有一个样本</span></span><br><span class="line">    output = [char_to_idx[prefix[<span class="number">0</span>]]] <span class="comment">#对第一个字符映射-&gt;单个数字</span></span><br><span class="line">    <span class="comment"># 从第一个字符开始 依次训练并输出</span></span><br><span class="line">    <span class="keyword">for</span> t <span class="keyword">in</span> range(len(prefix) + num_chars <span class="number">-1</span>):</span><br><span class="line">    <span class="comment"># 将上一时间步的输出（或是prefix原本的下一个字符的数字映射）作为当前时间步的输入</span></span><br><span class="line">    <span class="comment"># 将该输入转换为one-hot</span></span><br><span class="line">    <span class="comment"># 这里output[-1]外第一层括号指该样本就一个字符，第二层括号指该batch就一个样本</span></span><br><span class="line">    X = to_onehot(torch.tensor([[output[<span class="number">-1</span>]]], device=device), vocab_size)</span><br><span class="line">    <span class="comment">#计算输出和更新隐藏状态</span></span><br><span class="line">    (Y, state) = rnn(X, state, params)</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 接下来，把下一步的输入加到output用于处理成新的X</span></span><br><span class="line">    <span class="comment"># 下一个时间步的输入是prefix里的字符或者当前的最佳预测字符</span></span><br><span class="line">    <span class="keyword">if</span> t &lt; len(prefix)<span class="number">-1</span>: <span class="comment">#还没到Prefix最后一个字符，即加上下一个原有字符</span></span><br><span class="line">        output.append(char_to_idx[prefix[t+<span class="number">1</span>]])</span><br><span class="line">    <span class="keyword">else</span>: <span class="comment">#已经到prefix最后字符或之后了，加入预测结果，即加上当前步输出Y中第一个样本（本只有一个样本）的最大预测概率的下标</span></span><br><span class="line">        output.append(int(Y[<span class="number">0</span>].argmax(dim=<span class="number">1</span>).item()))</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> <span class="string">''</span>.join([idx_to_char[i] <span class="keyword">for</span> i <span class="keyword">in</span> output])</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="裁剪梯度"><a href="#裁剪梯度" class="headerlink" title="裁剪梯度"></a>裁剪梯度</h2><p>循环神经网络中较容易出现梯度衰减或梯度爆炸。我们会在之后节（通过时间反向传播）中解释原因。为了应对梯度爆炸，我们可以裁剪梯度（clip gradient）。<br>我们先判断梯度的L2范数是否超过阈值θ，若是，则进行裁剪：<br>    <img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-11%20%E4%B8%8B%E5%8D%8812.47.49.png" alt="alt"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本函数已保存在d2lzh_pytorch包中方便以后使用</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">grad_clipping</span><span class="params">(params, theta, device)</span>:</span></span><br><span class="line">    norm = torch.tensor([<span class="number">0.0</span>], device=device)</span><br><span class="line">    <span class="keyword">for</span> param <span class="keyword">in</span> params:</span><br><span class="line">        norm += (param.grad.data ** <span class="number">2</span>).sum()</span><br><span class="line">    norm = norm.sqrt().item()</span><br><span class="line">    <span class="keyword">if</span> norm &gt; theta:</span><br><span class="line">        <span class="keyword">for</span> param <span class="keyword">in</span> params:</span><br><span class="line">            param.grad.data *= (theta / norm)</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="困惑度"><a href="#困惑度" class="headerlink" title="困惑度"></a>困惑度</h2><p>我们通常使用困惑度（perplexity）来评价语言模型的好坏。回忆一下3.4节（softmax回归）中交叉熵损失函数的定义。<strong>困惑度是对交叉熵损失函数做指数运算后得到的值。</strong>特别地，</p>
+<p>最佳情况下，模型总是把标签类别的概率预测为1，此时困惑度为1；<br>最坏情况下，模型总是把标签类别的概率预测为0，此时困惑度为正无穷；<br>基线情况下，模型总是预测所有类别的概率都相同，此时困惑度为类别个数。</p>
+<p>显然，任何一个有效模型的困惑度必须小于类别个数。在本例中，困惑度必须小于词典大小vocab_size。</p>
+<h2 id="训练模型"><a href="#训练模型" class="headerlink" title="训练模型"></a>训练模型</h2><p>跟之前章节的模型训练函数相比，这里的模型训练函数有以下几点不同：<br>1.使用困惑度评价模型。(但训练还是用交叉熵loss)<br>2.在迭代模型参数前裁剪梯度。<br>3.对时序数据采用不同采样方法将导致隐藏状态初始化的不同。<br>另外，考虑到后面将介绍的其他循环神经网络，为了更通用，这里的函数实现更长一些。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train_and_predict_rnn</span><span class="params">(rnn, get_params, init_rnn_state, num_hiddens,</span></span></span><br><span class="line"><span class="function"><span class="params">                          vocab_size, device, corpus_indices, idx_to_char,</span></span></span><br><span class="line"><span class="function"><span class="params">                          char_to_idx, is_random_iter, num_epochs, num_steps,</span></span></span><br><span class="line"><span class="function"><span class="params">                          lr, clipping_theta, batch_size, pred_period,</span></span></span><br><span class="line"><span class="function"><span class="params">                          pred_len, prefixes)</span>:</span></span><br><span class="line"> <span class="comment">#其中，is_random_iter指是随机采样or相邻采样，</span></span><br><span class="line"> <span class="comment">#clipping_theta是裁剪梯度的阈值</span></span><br><span class="line"> <span class="comment">#prefixes是多个prefix的数组，即以多个前缀分别创作歌词</span></span><br><span class="line"> <span class="comment">#pred_period指每过多少个epoch迭代周期便预测创作一次</span></span><br><span class="line"> <span class="comment">#pred_len指创作歌词的长度</span></span><br><span class="line">     <span class="keyword">if</span> is_random_iter:</span><br><span class="line">         data_iter_fn = d2l.data_iter_random</span><br><span class="line">     <span class="keyword">else</span>:</span><br><span class="line">         data_iter_fn = d2l.data_iter_consecutive</span><br><span class="line">     params = get_params()</span><br><span class="line">     loss = nn.CrossEntropyLoss()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> range(num_epochs): <span class="comment">#有多少个batch</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> is_random_iter:  <span class="comment"># 如使用相邻采样，在epoch开始时初始化隐藏状态</span></span><br><span class="line">            state = init_rnn_state(batch_size, num_hiddens, device)</span><br><span class="line">        l_sum, n, start = <span class="number">0.0</span>, <span class="number">0</span>, time.time()</span><br><span class="line">        data_iter = data_iter_fn(corpus_indices, batch_size, num_steps, device)</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">for</span> X, Y <span class="keyword">in</span> data_iter:</span><br><span class="line">            <span class="keyword">if</span> is_random_iter:  <span class="comment"># 如使用随机采样，在每个小批量更新前初始化隐藏状态</span></span><br><span class="line">                state = init_rnn_state(batch_size, num_hiddens, device)</span><br><span class="line">            <span class="keyword">else</span>:  </span><br><span class="line">            <span class="comment"># 否则需要使用detach函数从计算图分离隐藏状态, 这是为了</span></span><br><span class="line">            <span class="comment"># 使模型参数的梯度计算只依赖一次迭代读取的小批量序列(防止梯度计算开销太大)</span></span><br><span class="line">                <span class="keyword">for</span> s <span class="keyword">in</span> state:</span><br><span class="line">                    s.detach_()</span><br><span class="line">            inputs = to_onehot(X, vocab_size)</span><br><span class="line">            (outputs, state) = rnn(inputs, state, params)</span><br><span class="line">            <span class="comment"># 拼接之后形状为(batch_size*num_steps, vocab_size)</span></span><br><span class="line">            outputs = torch.cat(outputs, dim=<span class="number">0</span>)</span><br><span class="line">            <span class="comment"># Y的形状是(batch_size, num_steps)，转置之后，再flatten，即拉成了可以和outputs一一对应的向量</span></span><br><span class="line">            y = torch.transpose(Y, <span class="number">0</span>,<span class="number">1</span>).contiguous().view(<span class="number">-1</span>)</span><br><span class="line">            l = loss(outputs, y.long())</span><br><span class="line">        </span><br><span class="line">            <span class="comment"># 梯度清0</span></span><br><span class="line">            <span class="keyword">if</span> params[<span class="number">0</span>].grad <span class="keyword">is</span> Not <span class="literal">None</span>:</span><br><span class="line">                <span class="keyword">for</span> param <span class="keyword">in</span> params:</span><br><span class="line">                    param.grad.data.zero_()</span><br><span class="line">            l.backward()</span><br><span class="line">            grad_clipping(params, clipping_theta, device) <span class="comment">#反向传播后裁剪梯度</span></span><br><span class="line">            <span class="comment">#梯度迭代更新</span></span><br><span class="line">            d2l.sgd(params, lr, <span class="number">1</span>) <span class="comment"># 因为误差已经取过均值，梯度不用再做平均</span></span><br><span class="line">            <span class="comment">#误差求和是为了之后求平均误差</span></span><br><span class="line">            <span class="comment">#误差是以”样本“为单位，样本数即y.shape[0]</span></span><br><span class="line">            l_sum += l.item() * y.shape[<span class="number">0</span>] </span><br><span class="line">            n += y.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">        <span class="comment">#训练完一定epoch后可以预测一下看看结果</span></span><br><span class="line">        <span class="keyword">if</span> (epoch + <span class="number">1</span>) % pred_period == <span class="number">0</span>:</span><br><span class="line">            print(<span class="string">'epoch %d, perplexity %f, time %.2f sec'</span> % (</span><br><span class="line">                epoch + <span class="number">1</span>, math.exp(l_sum / n), time.time() - start)) <span class="comment">#对loss作指数运算，得困惑度</span></span><br><span class="line">            <span class="comment">#预测看看</span></span><br><span class="line">            <span class="keyword">for</span> prefix <span class="keyword">in</span> prefixes:</span><br><span class="line">                print(<span class="string">' -'</span>, predict_rnn(prefix, pred_len, rnn, params, init_rnn_state,</span><br><span class="line">                    num_hiddens, vocab_size, device, idx_to_char, char_to_idx))</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>view(-1)即flatten()</strong>，区别很小，在于flatten是根据.reshape()的，而view和reshape的区别在于view是要应用于在内存上连续的数组的，所以当tensor之前调用了transpose, permute的话tensor在内存中不再连续，<strong>必须在调用.contiguous()使连续后再.view()</strong></p>
+</blockquote>
+<p>以上代码中，为了比对真实标签Y和训练输出结果outputs而进行的维度变换操作，如图所示。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/IMG_0394.jpg" alt="alt"></p>
+<br>
+现在我们可以训练模型了。首先，设置模型超参数。我们将根据前缀“分开”和“不分开”分别创作长度为50个字符（不考虑前缀长度）的一段歌词。我们每过50个迭代周期便根据当前训练的模型创作一段歌词。
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">num_epochs, num_steps, batch_size, lr, clipping_theta = <span class="number">250</span>, <span class="number">35</span>, <span class="number">32</span>, <span class="number">1e2</span>, <span class="number">1e-2</span></span><br><span class="line">pred_period, pred_len, prefixes = <span class="number">50</span>, <span class="number">50</span>, [<span class="string">'分开'</span>, <span class="string">'不分开'</span>]</span><br></pre></td></tr></table></figure>
+
+<h2 id="模型预测"><a href="#模型预测" class="headerlink" title="模型预测"></a>模型预测</h2><p>下面采用随机采样训练模型并创作歌词。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">train_and_predict_rnn(rnn, get_params, init_rnn_state, num_hiddens,</span><br><span class="line">                      vocab_size, device, corpus_indices, idx_to_char,</span><br><span class="line">                      char_to_idx, <span class="literal">True</span>, num_epochs, num_steps, lr,</span><br><span class="line">                      clipping_theta, batch_size, pred_period, pred_len,</span><br><span class="line">                      prefixes)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">epoch <span class="number">50</span>, perplexity <span class="number">70.039647</span>, time <span class="number">0.11</span> sec</span><br><span class="line"> - 分开 我不要再想 我不能 想你的让我 我的可 你怎么 一颗四 一颗四 我不要 一颗两 一颗四 一颗四 我</span><br><span class="line"> - 不分开 我不要再 你你的外 在人  别你的让我 狂的可 语人两 我不要 一颗两 一颗四 一颗四 我不要 一</span><br><span class="line">epoch <span class="number">100</span>, perplexity <span class="number">9.726828</span>, time <span class="number">0.12</span> sec</span><br><span class="line"> - 分开 一直的美栈人 一起看 我不要好生活 你知不觉 我已好好生活 我知道好生活 后知不觉 我跟了这生活 </span><br><span class="line"> - 不分开堡 我不要再想 我不 我不 我不要再想你 不知不觉 你已经离开我 不知不觉 我跟了好生活 我知道好生</span><br><span class="line">epoch <span class="number">150</span>, perplexity <span class="number">2.864874</span>, time <span class="number">0.11</span> sec</span><br><span class="line"> - 分开 一只会停留 有不它元羞 这蝪什么奇怪的事都有 包括像猫的狗 印地安老斑鸠 平常话不多 除非是乌鸦抢</span><br><span class="line"> - 不分开扫 我不你再想 我不能再想 我不 我不 我不要再想你 不知不觉 你已经离开我 不知不觉 我跟了这节奏</span><br><span class="line">epoch <span class="number">200</span>, perplexity <span class="number">1.597790</span>, time <span class="number">0.11</span> sec</span><br><span class="line"> - 分开 有杰伦 干 载颗拳满的让空美空主 相爱还有个人 再狠狠忘记 你爱过我的证  有晶莹的手滴 让说些人</span><br><span class="line"> - 不分开扫 我叫你爸 你打我妈 这样对吗干嘛这样 何必让它牵鼻子走 瞎 说底牵打我妈要 难道球耳 快使用双截</span><br><span class="line">epoch <span class="number">250</span>, perplexity <span class="number">1.303903</span>, time <span class="number">0.12</span> sec</span><br><span class="line"> - 分开 有杰人开留 仙唱它怕羞 蜥蝪横著走 这里什么奇怪的事都有 包括像猫的狗 印地安老斑鸠 平常话不多 </span><br><span class="line"> - 不分开简 我不能再想 我不 我不 我不能 爱情走的太快就像龙卷风 不能承受我已无处可躲 我不要再想 我不能</span><br></pre></td></tr></table></figure>
+<br>
+换个方法，采用相邻采样训练模型并创作歌词。
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">train_and_predict_rnn(rnn, get_params, init_rnn_state, num_hiddens,</span><br><span class="line">                      vocab_size, device, corpus_indices, idx_to_char,</span><br><span class="line">                      char_to_idx, <span class="literal">False</span>, num_epochs, num_steps, lr,</span><br><span class="line">                      clipping_theta, batch_size, pred_period, pred_len,</span><br><span class="line">                      prefixes)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">epoch <span class="number">50</span>, perplexity <span class="number">59.514416</span>, time <span class="number">0.11</span> sec</span><br><span class="line"> - 分开 我想要这 我想了空 我想了空 我想了空 我想了空 我想了空 我想了空 我想了空 我想了空 我想了空</span><br><span class="line"> - 不分开 我不要这 全使了双 我想了这 我想了空 我想了空 我想了空 我想了空 我想了空 我想了空 我想了空</span><br><span class="line">epoch <span class="number">100</span>, perplexity <span class="number">6.801417</span>, time <span class="number">0.11</span> sec</span><br><span class="line"> - 分开 我说的这样笑 想你都 不着我 我想就这样牵 你你的回不笑多难的  它在云实 有一条事 全你了空  </span><br><span class="line"> - 不分开觉 你已经离开我 不知不觉 我跟好这节活 我该好好生活 不知不觉 你跟了离开我 不知不觉 我跟好这节</span><br><span class="line">epoch <span class="number">150</span>, perplexity <span class="number">2.063730</span>, time <span class="number">0.16</span> sec</span><br><span class="line"> - 分开 我有到这样牵着你的手不放开 爱可不可以简简单单没有伤  古有你烦 我有多烦恼向 你知带悄 回我的外</span><br><span class="line"> - 不分开觉 你已经很个我 不知不觉 我跟了这节奏 后知后觉 又过了一个秋 后哼哈兮 快使用双截棍 哼哼哈兮 </span><br><span class="line">epoch <span class="number">200</span>, perplexity <span class="number">1.300031</span>, time <span class="number">0.11</span> sec</span><br><span class="line"> - 分开 我想要这样牵着你的手不放开 爱能不能够永远单甜没有伤害 你 靠着我的肩膀 你 在我胸口睡著 像这样</span><br><span class="line"> - 不分开觉 你已经离开我 不知不觉 我跟了这节奏 后知后觉 又过了一个秋 后知后觉 我该好好生活 我该好好生</span><br><span class="line">epoch <span class="number">250</span>, perplexity <span class="number">1.164455</span>, time <span class="number">0.11</span> sec</span><br><span class="line"> - 分开 我有一这样布 对你依依不舍 连隔壁邻居都猜到我现在的感受 河边的风 在吹着头发飘动 牵着你的手 一</span><br><span class="line"> - 不分开觉 你已经离开我 不知不觉 我跟了这节奏 后知后觉 又过了一个秋 后知后觉 我该好好生活 我该好好生</span><br></pre></td></tr></table></figure>
+
+<Br>
+
+<h1 id="简洁实现"><a href="#简洁实现" class="headerlink" title="简洁实现"></a>简洁实现</h1><p>本节将使用PyTorch来更简洁地实现基于循环神经网络的语言模型。</p>
+<p>首先，我们读取周杰伦专辑歌词数据集。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn, optim</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line">sys.path.append(<span class="string">".."</span>) </span><br><span class="line"><span class="keyword">import</span> d2lzh_pytorch <span class="keyword">as</span> d2l</span><br><span class="line">device = torch.device(<span class="string">'cuda'</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">'cpu'</span>)</span><br><span class="line"></span><br><span class="line">(corpus_indices, char_to_idx, idx_to_char, vocab_size) = d2l.load_data_jay_lyrics()</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="nn-RNN"><a href="#nn-RNN" class="headerlink" title="nn.RNN"></a>nn.RNN</h2><p>PyTorch中的<code>nn.RNN</code>模块提供了循环神经网络的实现。<strong>该前向计算不涉及输出层（需要在之后自定义全连接层）</strong>。</p>
+<p>注意<code>nn.RNN</code>的参数只需要输入”输入数据规模“和”隐藏层神经元个数“。</p>
+<p>nn.RNN返回的参数是Y, state_new。Y指的是隐藏层在<strong>各个时间步</strong>上计算并输出的隐藏状态H；state_new指的是隐藏层在<strong>最后时间步</strong>的隐藏状态H。<br>因此，Y的形状为<code>（时间步数num_steps，批量大小batch_size，隐藏单元个数num_hiddens）</code>；state_new的形状为<code>（隐藏层的层数hidden_size，批量大小batch_size，隐藏单元个数num_hiddens）</code>。<br><em>再理解一下，即：<br>输出Y是各个时间步经过了所有隐藏层得到的输出H，即是<strong>纵向——纵穿神经网络</strong>最后的结果。<strong>而此结果作为后续自定义全连接层的输入。</strong><br>state_new是每个隐藏层中，运算到最后一个时间步的输出，即是<strong>横向——横贯时间序列</strong>的结果。</em></p>
+<p>一张图理解：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-11%20%E4%B8%8B%E5%8D%888.32.57.png" alt="alt"><br>这里input是一个样本的输入（一个batch中有批量大小个样本），可看做一个时间序列（xi为一个时间步），一共有w层隐藏层，每个隐藏层有num_hiddens个隐藏单元。<br>最上方output即Y；最右侧可看做state_new，在LSTM中为(h,c)<br><br></p>
+<h2 id="定义模型-1"><a href="#定义模型-1" class="headerlink" title="定义模型"></a>定义模型</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#构造1个含2个隐藏层、隐藏单元个数为256的循环神经网络层rnn_layer。</span></span><br><span class="line">num_hiddens = <span class="number">256</span></span><br><span class="line">rnn_layer = nn.RNN(input_size=vocab_size, hidden_size=num_hiddens)</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RNNModel</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, rnn_layer, vocab_size)</span>:</span></span><br><span class="line">        super(RNNModel, self).__init__()</span><br><span class="line">        self.rnn = rnn_layer </span><br><span class="line">        <span class="comment">#隐藏层个数 2个或一个双向</span></span><br><span class="line">        self.hidden_size=rnn_layer.hidden_size * (<span class="number">2</span> <span class="keyword">if</span> rnn_layer.bidirectional <span class="keyword">else</span> <span class="number">1</span>)</span><br><span class="line">        self.vocab_size = vocab_size</span><br><span class="line">        <span class="comment">#nn.RNN后续的全连接层需要自定义</span></span><br><span class="line">        <span class="comment">#输入为Y，输出维度为字典长度即各个字的概率值</span></span><br><span class="line">        self.dense = nn.Linear(self.hidden_size, vocab_size)</span><br><span class="line">        self.state = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, inputs, state)</span>:</span></span><br><span class="line">        <span class="comment">#获取one-hot向量表示</span></span><br><span class="line">        X = d2l.to_onehot(inputs, self.vocab_size) </span><br><span class="line">        <span class="comment">#由于X包含多个batch，所以现在将每个batch拼接作为一个batch</span></span><br><span class="line">        <span class="comment">#传入RNN</span></span><br><span class="line">        Y, self.state = self.rnn(torch.stack(X), state)</span><br><span class="line">        <span class="comment">#得到的Y要传入全连接层</span></span><br><span class="line">        <span class="comment">#Y的维度是（num_steps, batch_size, num_hiddens）</span></span><br><span class="line">        <span class="comment">#我们要将Y的形状变成(num_steps * batch_size, num_hiddens)</span></span><br><span class="line">        output = self.dense(Y.view(<span class="number">-1</span>, Y.shape[<span class="number">-1</span>]) )</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">return</span> output, self.state</span><br></pre></td></tr></table></figure>
+
+<br>
+
+<h2 id="预测函数-1"><a href="#预测函数-1" class="headerlink" title="预测函数"></a>预测函数</h2><p>同上一节一样，我们定义一个预测函数，然后在之后训练模型的一定epoch之后进行预测查看效果。</p>
+<p>这里与之前在实现上的区别在于前向计算（model传入不同）和初始化隐藏状态（要考虑LSTM的隐藏状态H是个tuple）的函数接口。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本函数已保存在d2lzh_pytorch包中方便以后使用</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">predict_rnn_pytorch</span><span class="params">(prefix, num_chars, model, vocab_size, device, idx_to_char,</span></span></span><br><span class="line"><span class="function"><span class="params">                      char_to_idx)</span>:</span></span><br><span class="line">    state = <span class="literal">None</span></span><br><span class="line">    output = [char_to_idx[prefix[<span class="number">0</span>]]] <span class="comment"># output会记录prefix加上输出</span></span><br><span class="line">    <span class="keyword">for</span> t <span class="keyword">in</span> range(num_chars + len(prefix) - <span class="number">1</span>):</span><br><span class="line">        X = torch.tensor([output[<span class="number">-1</span>]], device=device).view(<span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">        <span class="keyword">if</span> state <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="keyword">if</span> isinstance(state, tuple): <span class="comment"># LSTM, state:(h, c)  </span></span><br><span class="line">                state = (state[<span class="number">0</span>].to(device), state[<span class="number">1</span>].to(device))</span><br><span class="line">            <span class="keyword">else</span>:   </span><br><span class="line">                state = state.to(device)</span><br><span class="line"></span><br><span class="line">        (Y, state) = model(X, state)</span><br><span class="line">        <span class="keyword">if</span> t &lt; len(prefix) - <span class="number">1</span>:</span><br><span class="line">            output.append(char_to_idx[prefix[t + <span class="number">1</span>]])</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            output.append(int(Y.argmax(dim=<span class="number">1</span>).item()))</span><br><span class="line">    <span class="keyword">return</span> <span class="string">''</span>.join([idx_to_char[i] <span class="keyword">for</span> i <span class="keyword">in</span> output])</span><br></pre></td></tr></table></figure>
+
+<br>
+
+<h2 id="训练模型-1"><a href="#训练模型-1" class="headerlink" title="训练模型"></a>训练模型</h2><p>接下来实现训练函数。算法同上一节的一样，区别在于用的函数是torch.nn的工具函数。<br><em>这里再小结下经典工具函数（按调用的时间顺序）：</em></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">loss = nn.CrossEntropyLoss()</span><br><span class="line">optimizer = torch.optim.Adam(model.parameters(), lr=lr)</span><br><span class="line">optimizer.zero_grad()</span><br><span class="line">l.backward()</span><br><span class="line">optimizer.step()</span><br></pre></td></tr></table></figure>
+
+<p>这里只使用了相邻采样来读取数据，少一个random_data_iter参数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本函数已保存在d2lzh_pytorch包中方便以后使用</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train_and_predict_rnn_pytorch</span><span class="params">(model, num_hiddens, vocab_size, device,</span></span></span><br><span class="line"><span class="function"><span class="params">                                corpus_indices, idx_to_char, char_to_idx,</span></span></span><br><span class="line"><span class="function"><span class="params">                                num_epochs, num_steps, lr, clipping_theta,</span></span></span><br><span class="line"><span class="function"><span class="params">                                batch_size, pred_period, pred_len, prefixes)</span>:</span></span><br><span class="line">    loss = nn.CrossEntropyLoss()</span><br><span class="line">    optimizer = torch.optim.Adam(model.parameters(), lr=lr)</span><br><span class="line">    model.to(device)</span><br><span class="line">    state = <span class="literal">None</span></span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> range(num_epochs):</span><br><span class="line">        l_sum, n, start = <span class="number">0.0</span>, <span class="number">0</span>, time.time()</span><br><span class="line">        data_iter = d2l.data_iter_consecutive(corpus_indices, batch_size, num_steps, device) <span class="comment"># 相邻采样</span></span><br><span class="line">        <span class="keyword">for</span> X, Y <span class="keyword">in</span> data_iter:</span><br><span class="line">            <span class="keyword">if</span> state <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">                <span class="comment"># 使用detach函数从计算图分离隐藏状态, 这是为了</span></span><br><span class="line">                <span class="comment"># 使模型参数的梯度计算只依赖一次迭代读取的小批量序列(防止梯度计算开销太大)</span></span><br><span class="line">                <span class="keyword">if</span> isinstance (state, tuple): <span class="comment"># LSTM, state:(h, c)  </span></span><br><span class="line">                    state = (state[<span class="number">0</span>].detach(), state[<span class="number">1</span>].detach())</span><br><span class="line">                <span class="keyword">else</span>:   </span><br><span class="line">                    state = state.detach()</span><br><span class="line">            <span class="comment">#注意这里传入的X是data_iter传出来的一个batch。计算后得到的state是该batch的结果，在for循环中会将此state用于下一个batch，因为是相邻取样。</span></span><br><span class="line">            (output, state) = model(X, state) <span class="comment"># output: 形状为(num_steps * batch_size, vocab_size)</span></span><br><span class="line"></span><br><span class="line">            <span class="comment"># Y的形状是(batch_size, num_steps)，转置后再变成长度为</span></span><br><span class="line">            <span class="comment"># batch * num_steps 的向量，这样跟输出的行一一对应</span></span><br><span class="line">            y = torch.transpose(Y, <span class="number">0</span>, <span class="number">1</span>).contiguous().view(<span class="number">-1</span>)</span><br><span class="line">            l = loss(output, y.long())</span><br><span class="line"></span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            l.backward()</span><br><span class="line">            <span class="comment"># 梯度裁剪</span></span><br><span class="line">            d2l.grad_clipping(model.parameters(), clipping_theta, device)</span><br><span class="line">            optimizer.step()</span><br><span class="line">            l_sum += l.item() * y.shape[<span class="number">0</span>]</span><br><span class="line">            n += y.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            perplexity = math.exp(l_sum / n)</span><br><span class="line">        <span class="keyword">except</span> OverflowError:</span><br><span class="line">            perplexity = float(<span class="string">'inf'</span>)</span><br><span class="line">        <span class="keyword">if</span> (epoch + <span class="number">1</span>) % pred_period == <span class="number">0</span>:</span><br><span class="line">            print(<span class="string">'epoch %d, perplexity %f, time %.2f sec'</span> % (</span><br><span class="line">                epoch + <span class="number">1</span>, perplexity, time.time() - start))</span><br><span class="line">            <span class="keyword">for</span> prefix <span class="keyword">in</span> prefixes:</span><br><span class="line">                print(<span class="string">' -'</span>, predict_rnn_pytorch(</span><br><span class="line">                    prefix, pred_len, model, vocab_size, device, idx_to_char,</span><br><span class="line">                    char_to_idx))</span><br></pre></td></tr></table></figure>
+<p>使用和上一节实验中一样的超参数（除了学习率）来训练模型。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">num_epochs, batch_size, lr, clipping_theta = <span class="number">250</span>, <span class="number">32</span>, <span class="number">1e-3</span>, <span class="number">1e-2</span> <span class="comment"># 注意这里的学习率设置</span></span><br><span class="line">pred_period, pred_len, prefixes = <span class="number">50</span>, <span class="number">50</span>, [<span class="string">'分开'</span>, <span class="string">'不分开'</span>]</span><br><span class="line">train_and_predict_rnn_pytorch(model, num_hiddens, vocab_size, device,</span><br><span class="line">                            corpus_indices, idx_to_char, char_to_idx,</span><br><span class="line">                            num_epochs, num_steps, lr, clipping_theta,</span><br><span class="line">                            batch_size, pred_period, pred_len, prefixes)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">epoch <span class="number">50</span>, perplexity <span class="number">10.658418</span>, time <span class="number">0.05</span> sec</span><br><span class="line"> - 分开始我妈  想要你 我不多 让我心到的 我妈妈 我不能再想 我不多再想 我不要再想 我不多再想 我不要</span><br><span class="line"> - 不分开 我想要你不你 我 你不要 让我心到的 我妈人 可爱女人 坏坏的让我疯狂的可爱女人 坏坏的让我疯狂的</span><br><span class="line">epoch <span class="number">100</span>, perplexity <span class="number">1.308539</span>, time <span class="number">0.05</span> sec</span><br><span class="line"> - 分开不会痛 不要 你在黑色幽默 开始了美丽全脸的梦滴 闪烁成回忆 伤人的美丽 你的完美主义 太彻底 让我</span><br><span class="line"> - 不分开不是我不要再想你 我不能这样牵着你的手不放开 爱可不可以简简单单没有伤害 你 靠着我的肩膀 你 在我</span><br><span class="line">epoch <span class="number">150</span>, perplexity <span class="number">1.070370</span>, time <span class="number">0.05</span> sec</span><br><span class="line"> - 分开不能去河南嵩山 学少林跟武当 快使用双截棍 哼哼哈兮 快使用双截棍 哼哼哈兮 习武之人切记 仁者无敌</span><br><span class="line"> - 不分开 在我会想通 是谁开没有全有开始 他心今天 一切人看 我 一口令秋软语的姑娘缓缓走过外滩 消失的 旧</span><br><span class="line">epoch <span class="number">200</span>, perplexity <span class="number">1.034663</span>, time <span class="number">0.05</span> sec</span><br><span class="line"> - 分开不能去吗周杰伦 才离 没要你在一场悲剧 我的完美主义 太彻底 分手的话像语言暴力 我已无能为力再提起</span><br><span class="line"> - 不分开 让我面到你 爱情来的太快就像龙卷风 离不开暴风圈来不及逃 我不能再想 我不能再想 我不 我不 我不</span><br><span class="line">epoch <span class="number">250</span>, perplexity <span class="number">1.021437</span>, time <span class="number">0.05</span> sec</span><br><span class="line"> - 分开 我我外的家边 你知道这 我爱不看的太  我想一个又重来不以 迷已文一只剩下回忆 让我叫带你 你你的</span><br><span class="line"> - 不分开 我我想想和 是你听没不  我不能不想  不知不觉 你已经离开我 不知不觉 我跟了这节奏 后知后觉</span><br></pre></td></tr></table></figure>
+<Br>
+
+<h1 id="GRU"><a href="#GRU" class="headerlink" title="GRU"></a>GRU</h1><p>通过上一节中循环神经网络的梯度计算方法，我们知道，如果要反向传播求导，由于ht又依赖于ht-1又依赖于ht-2…，所以这个链式法则会很长，因此易导致梯度衰减或爆炸。<br>虽然裁剪梯度可以应对梯度爆炸，但无法解决梯度衰减的问题。通常由于这个原因，循环神经网络在实际中较难捕捉时间序列中时间步距离较大的依赖关系。</p>
+<p>门控循环神经网络GRNN（gated recurrent neural network）的提出，正是为了<em>更好地捕捉时间序列中时间步距离较大的依赖关系</em>，<em>通过可以学习的门来控制信息的流动</em>。<br>其中，门控循环单元（gated recurrent unit，GRU）是一种常用的门控循环神经网络。</p>
+<p>下面将介绍门控循环单元的设计。它引入了重置门（reset gate）和更新门（update gate）的概念，从而<em>修改了循环神经网络中隐藏状态的计算方式</em>。</p>
+<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p><strong>1）重置门与更新门</strong><br><em>将当前步输入Xt与上一步隐藏状态Ht-1作线性运算，再套个sigmoid即可</em>。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-12%20%E4%B8%8B%E5%8D%882.49.57.png" alt="alt"></p>
+<br>
+
+<p><strong>2）候选隐藏状态</strong><br><em>候选隐藏状态和隐藏状态计算上的区别在于，前者会将上一个时间步的隐藏状态*</em>与此处的重置门输出相乘*<em>，即对上一个时间步的隐藏状态、对历史信息做了预处理，然后再代入计算当前的隐藏状态</em>。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-12%20%E4%B8%8B%E5%8D%882.54.40.png" alt="alt"></p>
+<br>
+
+<p><strong>3）隐藏状态</strong><br><em>运用更新门，掌控上一时间步的隐藏状态Ht-1和此步计算得到的候选隐藏状态之间的比例，作为此步的隐藏状态。</em><br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-12%20%E4%B8%8B%E5%8D%883.01.06.png" alt="alt"></p>
+<br>
+我们对门控循环单元的设计稍作总结：
+
+<p><strong>重置门有助于捕捉时间序列里短期的依赖关系（用于当前步候选隐藏状态的计算）；<br>更新门有助于捕捉时间序列里长期的依赖关系（用于当前步隐藏状态的计算）。</strong></p>
+<br>
+
+<h2 id="从零实现-1"><a href="#从零实现-1" class="headerlink" title="从零实现"></a>从零实现</h2><p>初始化模型参数</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">num_inputs, num_hiddens, num_outputs = vocab_size, <span class="number">256</span>, vocab_size</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_params</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_one</span><span class="params">(shape)</span>:</span></span><br><span class="line">        ts = torch.tensor(np.random.normal(<span class="number">0</span>, <span class="number">0.01</span>, size=shape), device=device, dtype=torch.float32)</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_three</span><span class="params">(shape)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> ( _one((num_inputs, num_hiddens),</span><br><span class="line">                 _one((num_hiddens, num_hiddens),</span><br><span class="line">                 torch.nn.Parameter(torch.zeros(num_hiddens, device=device, dtype=torch.float32), requires_grad=<span class="literal">True</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#回顾公式，更新门和重置门计算都是要乘X和H</span></span><br><span class="line">    <span class="comment">#候选异常状态也是先乘X，之后让H先与重置门输出相乘</span></span><br><span class="line">    W_xz, W_hz, b_z = _three()  <span class="comment"># 更新门参数</span></span><br><span class="line">    W_xr, W_hr, b_r = _three()  <span class="comment"># 重置门参数</span></span><br><span class="line">    W_xh, W_hh, b_h = _three()  <span class="comment"># 候选隐藏状态参数</span></span><br><span class="line">                )</span><br></pre></td></tr></table></figure>
+<br>
+
+<p>下面的代码定义隐藏状态初始化函数init_gru_state，同6.4节（循环神经网络的从零开始实现）中定义的init_rnn_state函数一样，它返回由一个形状为(批量大小, 隐藏单元个数)的值为0的Tensor组成的元组。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">init_gru_state</span><span class="params">(batch_size, num_hiddens, device)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> (torch.zeros((batch_size, num_hiddens), device=device), )</span><br></pre></td></tr></table></figure>
+<p>下面根据门控循环单元的计算表达式定义模型。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gru</span><span class="params">(inputs, state, params)</span>:</span></span><br><span class="line">    W_xz, W_hz, b_z, W_xr, W_hr, b_r, W_xh, W_hh, b_h, W_hq, b_q = params</span><br><span class="line">    H, = state</span><br><span class="line">    outputs = []</span><br><span class="line">    <span class="keyword">for</span> X <span class="keyword">in</span> inputs:</span><br><span class="line">        Z = torch.sigmoid(torch.matmul(X, W_xz) + torch.matmul(H, W_hz) + b_z)</span><br><span class="line">        R = torch.sigmoid(torch.matmul(X, W_xr) + torch.matmul(H, W_hr) + b_r)</span><br><span class="line">        H_tilda = torch.tanh(torch.matmul(X, W_xh) + torch.matmul(R * H, W_hh) + b_h)</span><br><span class="line">        H = Z * H + (<span class="number">1</span> - Z) * H_tilda</span><br><span class="line">        Y = torch.matmul(H, W_hq) + b_q</span><br><span class="line">        outputs.append(Y)</span><br><span class="line">    <span class="keyword">return</span> outputs, (H,)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意点乘用*实现；正儿八经矩阵乘法用torch.matmul实现。</p>
+</blockquote>
+<br>
+
+<h2 id="简洁实现-1"><a href="#简洁实现-1" class="headerlink" title="简洁实现"></a>简洁实现</h2><p>直接调用<code>nn.GRU(input_size, hidden_size)</code>，同我们用到的RNN工具函数一样，其不包含之后的全连接层。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">lr = <span class="number">1e-2</span> <span class="comment"># 注意调整学习率</span></span><br><span class="line">gru_layer = nn.GRU(input_size=vocab_size, hidden_size=num_hiddens)</span><br><span class="line">model = d2l.RNNModel(gru_layer, vocab_size).to(device) <span class="comment">#实例gru_layer传入我们设计好的网络模型类（带自定义全连接层）</span></span><br><span class="line">d2l.train_and_predict_rnn_pytorch(model, num_hiddens, vocab_size, device,</span><br><span class="line">                                corpus_indices, idx_to_char, char_to_idx,</span><br><span class="line">                                num_epochs, num_steps, lr, clipping_theta,</span><br><span class="line">                                batch_size, pred_period, pred_len, prefixes)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">epoch <span class="number">40</span>, perplexity <span class="number">1.022157</span>, time <span class="number">1.02</span> sec</span><br><span class="line"> - 分开手牵手 一步两步三步四步望著天 看星星 一颗两颗三颗四颗 连成线背著背默默许下心愿 看远方的星是否听</span><br><span class="line"> - 不分开暴风圈来不及逃 我不能再想 我不能再想 我不 我不 我不能 爱情走的太快就像龙卷风 不能承受我已无处</span><br><span class="line">epoch <span class="number">80</span>, perplexity <span class="number">1.014535</span>, time <span class="number">1.04</span> sec</span><br><span class="line"> - 分开始想像 爸和妈当年的模样 说著一口吴侬软语的姑娘缓缓走过外滩 消失的 旧时光 一九四三 在回忆 的路</span><br><span class="line"> - 不分开始爱像  不知不觉 你已经离开我 不知不觉 我跟了这节奏 后知后觉 又过了一个秋 后知后觉 我该好好</span><br><span class="line">epoch <span class="number">120</span>, perplexity <span class="number">1.147843</span>, time <span class="number">1.04</span> sec</span><br><span class="line"> - 分开都靠我 你拿着球不投 又不会掩护我 选你这种队友 瞎透了我 说你说 分数怎么停留 所有回忆对着我进攻</span><br><span class="line"> - 不分开球我有多烦恼多 牧草有没有危险 一场梦 我面对我 甩开球我满腔的怒火 我想揍你已经很久 别想躲 说你</span><br><span class="line">epoch <span class="number">160</span>, perplexity <span class="number">1.018370</span>, time <span class="number">1.05</span> sec</span><br><span class="line"> - 分开爱上你 那场悲剧 是你完美演出的一场戏 宁愿心碎哭泣 再狠狠忘记 你爱过我的证据 让晶莹的泪滴 闪烁</span><br><span class="line"> - 不分开始 担心今天的你过得好不好 整个画面是你 想你想的睡不著 嘴嘟嘟那可爱的模样 还有在你身上香香的味道</span><br></pre></td></tr></table></figure>
+<Br>
+
+<h1 id="LSTM"><a href="#LSTM" class="headerlink" title="LSTM"></a>LSTM</h1><p>本节将介绍另一种常用的门控循环神经网络：长短期记忆（long short-term memory，LSTM）。它比门控循环单元的结构稍微复杂一点。</p>
+<p><strong>1）输入门、输出门、遗忘门</strong><br>与门控循环单元中的重置门和更新门一样，如图6.7所示，长短期记忆的门的输入均为当前时间步输入Xt与上一时间步隐藏状态Ht−1，输出由激活函数为sigmoid函数的全连接层计算得到。如此一来，这3个门元素的值域均为[0,1]。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-12%20%E4%B8%8B%E5%8D%887.58.43.png" alt="alt"></p>
+<Br>
+
+<p><strong>2）候选记忆细胞</strong><br>LSTM需要候选记忆细胞，计算与以上三个门类似，也用到Xt和Ht-1，但区别在于，用的激活函数是tanh，使得值域在[-1,1]。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-12%20%E4%B8%8B%E5%8D%888.00.33.png" alt="alt"></p>
+<br>
+
+<p><strong>3）记忆细胞</strong><br>我们通过门来控制隐藏状态中信息的流动，这一般也是通过使用按元素乘法（符号为⊙）来实现的。</p>
+<p>这里当前步记忆细胞Ct的计算采用：<em>上一步记忆细胞和当前步候选记忆细胞的加权，由遗忘门和输入门来控制信息的流动</em>。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-12%20%E4%B8%8B%E5%8D%888.03.22.png" alt="alt"></p>
+<p><strong>4）隐藏状态</strong><br>有了记忆细胞以后，接下来我们通过<strong>输出门</strong>来控制从记忆细胞到隐藏状态的信息的流动，注意记忆细胞要先tanh一下再与Ot点乘：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-12%20%E4%B8%8B%E5%8D%888.14.12.png" alt="alt"></p>
+<br>
+
+<h2 id="从零实现-2"><a href="#从零实现-2" class="headerlink" title="从零实现"></a>从零实现</h2><p>初始化模型参数。三个门和候选记忆细胞的计算方法都一样（只是候选记忆细胞用tanh），所以参数规模是一样的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">num_inputs, num_hiddens, num_outputs = vocab_size, <span class="number">256</span>, vocab_size</span><br><span class="line">print(<span class="string">'will use'</span>, device)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_params</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_one</span><span class="params">(shape)</span>:</span></span><br><span class="line">        ts = torch.tensor(np.random.normal(<span class="number">0</span>, <span class="number">0.01</span>, size=shape), device=device, dtype=torch.float32)</span><br><span class="line">        <span class="keyword">return</span> torch.nn.Parameter(ts, requires_grad=<span class="literal">True</span>)</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_three</span><span class="params">()</span>:</span></span><br><span class="line">        <span class="keyword">return</span> (_one((num_inputs, num_hiddens)),</span><br><span class="line">                _one((num_hiddens, num_hiddens)),</span><br><span class="line">                torch.nn.Parameter(torch.zeros(num_hiddens, device=device, dtype=torch.float32), requires_grad=<span class="literal">True</span>))</span><br><span class="line"></span><br><span class="line">    W_xi, W_hi, b_i = _three()  <span class="comment"># 输入门参数</span></span><br><span class="line">    W_xf, W_hf, b_f = _three()  <span class="comment"># 遗忘门参数</span></span><br><span class="line">    W_xo, W_ho, b_o = _three()  <span class="comment"># 输出门参数</span></span><br><span class="line">    W_xc, W_hc, b_c = _three()  <span class="comment"># 候选记忆细胞参数</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 输出层参数</span></span><br><span class="line">    W_hq = _one((num_hiddens, num_outputs))</span><br><span class="line">    b_q = torch.nn.Parameter(torch.zeros(num_outputs, device=device, dtype=torch.float32), requires_grad=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">return</span> nn.ParameterList([W_xi, W_hi, b_i, W_xf, W_hf, b_f, W_xo, W_ho, b_o, W_xc, W_hc, b_c, W_hq, b_q])</span><br></pre></td></tr></table></figure>
+<br>
+注意这里LSTM和GRU或其他循环神经网络的不同，LSTM返回的参数为一个tuple(H,C)，即隐藏状态和记忆细胞，这也是之后时间步要用到的运算元素。
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">init_lstm_state</span><span class="params">(batch_size, num_hiddens, device)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> (torch.zeros((batch_size, num_hiddens), device=device), </span><br><span class="line">            torch.zeros((batch_size, num_hiddens), device=device))</span><br></pre></td></tr></table></figure>
+<p>下面定义LSTM模型。<br>需要注意的是，只有隐藏状态会传递到输出层，而记忆细胞不参与输出层的计算。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">lstm</span><span class="params">(inputs, state, params)</span>:</span></span><br><span class="line"><span class="comment"># inputs是一个batch（详见data_iter实现）</span></span><br><span class="line"><span class="comment"># state可能是初始值，也可能是上一个batch的state结果（如果是相邻取样的话）</span></span><br><span class="line">    [W_xi, W_hi, b_i, W_xf, W_hf, b_f, W_xo, W_ho, b_o, W_xc, W_hc, b_c, W_hq, b_q] = params</span><br><span class="line">    (H, C) = state <span class="comment">#state是一个tuple</span></span><br><span class="line">    outputs = [] <span class="comment">#该batch的输出</span></span><br><span class="line">    <span class="keyword">for</span> X <span class="keyword">in</span> inputs: <span class="comment">#对该batch中的每个样本依次计算</span></span><br><span class="line">        I = torch.sigmoid(torch.matmul(X, W_xi) + torch.matmul(H, W_hi) + b_i)</span><br><span class="line">        F = torch.sigmoid(torch.matmul(X, W_xf) + torch.matmul(H, W_hf) + b_f)</span><br><span class="line">        O = torch.sigmoid(torch.matmul(X, W_xo) + torch.matmul(H, W_ho) + b_o)</span><br><span class="line">        <span class="comment">#候选记忆细胞 和三门计算方法一样 只是用的tanh</span></span><br><span class="line">        C_tilda = torch.tanh(torch.matmul(X, W_xc) + torch.matmul(H, W_hc) + b_c)</span><br><span class="line">        C = F*C + I*C_tilda</span><br><span class="line">        H = O * C.tanh()</span><br><span class="line">        <span class="comment">#输出是只用H的</span></span><br><span class="line">        Y = torch.matmul(H, W_hq) + b_q</span><br><span class="line">        outputs.append(Y) </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> outputs, (H,C)</span><br></pre></td></tr></table></figure>
+<br>
+
+<p>接下来训练模型并预测（创作歌词）<br>同上一节一样，我们在训练模型时只使用相邻采样。设置好超参数后，我们将训练模型并根据前缀“分开”和“不分开”分别创作长度为50个字符的一段歌词。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">num_epochs, num_steps, batch_size, lr, clipping_theta = <span class="number">160</span>, <span class="number">35</span>, <span class="number">32</span>, <span class="number">1e2</span>, <span class="number">1e-2</span></span><br><span class="line">pred_period, pred_len, prefixes = <span class="number">40</span>, <span class="number">50</span>, [<span class="string">'分开'</span>, <span class="string">'不分开'</span>]</span><br></pre></td></tr></table></figure>
+<p>我们每过40个迭代周期便根据当前训练的模型创作一段歌词。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">d2l.train_and_predict_rnn(lstm, get_params, init_lstm_state, num_hiddens,</span><br><span class="line">                          vocab_size, device, corpus_indices, idx_to_char,</span><br><span class="line">                          char_to_idx, <span class="literal">False</span>, num_epochs, num_steps, lr,</span><br><span class="line">                          clipping_theta, batch_size, pred_period, pred_len,</span><br><span class="line">                          prefixes)</span><br></pre></td></tr></table></figure>
+
+<br>
+
+<h2 id="简洁实现-2"><a href="#简洁实现-2" class="headerlink" title="简洁实现"></a>简洁实现</h2><p>直接调用nn.LSTM(input_size=vocab_size, hidden_size=num_hiddens)，同理我们把它加入到完整的网络模型中，实例化后调用。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">lr = <span class="number">1e-2</span> <span class="comment"># 注意调整学习率</span></span><br><span class="line">lstm_layer = nn.LSTM(input_size=vocab_size, hidden_size=num_hiddens)</span><br><span class="line">model = d2l.RNNModel(lstm_layer, vocab_size)</span><br><span class="line">d2l.train_and_predict_rnn_pytorch(model, num_hiddens, vocab_size, device,</span><br><span class="line">                                corpus_indices, idx_to_char, char_to_idx,</span><br><span class="line">                                num_epochs, num_steps, lr, clipping_theta,</span><br><span class="line">                                batch_size, pred_period, pred_len, prefixes)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">epoch <span class="number">40</span>, perplexity <span class="number">1.020401</span>, time <span class="number">1.54</span> sec</span><br><span class="line"> - 分开始想担 妈跟我 一定是我妈在 因为分手前那句抱歉 在感动 穿梭时间的画面的钟 从反方向开始移动 回到</span><br><span class="line"> - 不分开始想像 妈跟我 我将我的寂寞封闭 然后在这里 不限日期 然后将过去 慢慢温习 让我爱上你 那场悲剧 </span><br><span class="line">epoch <span class="number">80</span>, perplexity <span class="number">1.011164</span>, time <span class="number">1.34</span> sec</span><br><span class="line"> - 分开始想担 你的 从前的可爱女人 温柔的让我心疼的可爱女人 透明的让我感动的可爱女人 坏坏的让我疯狂的可</span><br><span class="line"> - 不分开 我满了 让我疯狂的可爱女人 漂亮的让我面红的可爱女人 温柔的让我心疼的可爱女人 透明的让我感动的可</span><br><span class="line">epoch <span class="number">120</span>, perplexity <span class="number">1.025348</span>, time <span class="number">1.39</span> sec</span><br><span class="line"> - 分开始共渡每一天 手牵手 一步两步三步四步望著天 看星星 一颗两颗三颗四颗 连成线背著背默默许下心愿 看</span><br><span class="line"> - 不分开 我不懂 说了没用 他的笑容 有何不同 在你心中 我不再受宠 我的天空 是雨是风 还是彩虹 你在操纵</span><br><span class="line">epoch <span class="number">160</span>, perplexity <span class="number">1.017492</span>, time <span class="number">1.42</span> sec</span><br><span class="line"> - 分开始乡相信命运 感谢地心引力 让我碰到你 漂亮的让我面红的可爱女人 温柔的让我心疼的可爱女人 透明的让</span><br><span class="line"> - 不分开 我不能再想 我不 我不 我不能 爱情走的太快就像龙卷风 不能承受我已无处可躲 我不要再想 我不要再</span><br></pre></td></tr></table></figure>
+<br>
+
+<h1 id="深度RNN"><a href="#深度RNN" class="headerlink" title="深度RNN"></a>深度RNN</h1><p>我们之前代码实现的都是一个RNN层，然后将隐藏状态的信息不断传递至当前层的下一时间步，这是横向。</p>
+<p>如果是有连续的多层RNN层，则隐藏状态的信息还会传递至当前时间步的下一层，即在下一层计算隐藏状态H(t+1)时，将Ht作为输入X带入公式。<br>如此传递，最终，当前时间步的输出层的输出只需基于最后一个隐藏层的隐藏状态。</p>
+<br>
+
+<h1 id="双向RNN"><a href="#双向RNN" class="headerlink" title="双向RNN"></a>双向RNN</h1><p>之前介绍的循环神经网络模型都是假设当前时间步是由前面的较早时间步的序列决定的，因此它们都将信息通过隐藏状态从前往后传递。有时候，当前时间步也可能由后面时间步决定。例如，当我们写下一个句子时，可能会根据句子后面的词来修改句子前面的用词。双向循环神经网络通过增加从后往前传递信息的隐藏层来更灵活地处理这类信息。<br>图6.12演示了一个含单隐藏层的双向循环神经网络的架构。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-12%20%E4%B8%8B%E5%8D%8810.18.25.png" alt="alt"><br><br></p>
+<p><em>这里简单理解，对于一个时间步，我们算两种隐藏状态H：<br>①正向→Ht，即用到当前步输入Xt和上一步的H(t-1)<br>②反向←Ht，即用到当前步输入Xt和下一步的H(t+1)<br>然后我们将二者连接，得到最终的Ht ∈R(nX2h)，并将其输入到输出层，用于计算输出Ot。</em></p>
+<p>因此，双向循环神经网络在每个时间步的隐藏状态同时取决于该时间步之前和之后的子序列（包括当前时间步的输入）。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/12/%E5%BE%AA%E7%8E%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/" data-id="ck6jffwf30000ck6c81mrdixk"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8A%A8%E6%89%8B%E5%AD%A6%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">动手学深度学习</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/02/09/%E5%8D%B7%E7%A7%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">卷积神经网络</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
