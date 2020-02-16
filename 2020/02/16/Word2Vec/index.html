@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    Word2Vec |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-Word2Vec" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Word2Vec
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/02/16/Word2Vec/" class="article-date">
+  <time datetime="2020-02-16T10:20:14.000Z" itemprop="datePublished">2020-02-16</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>《动手学深度学习pytorch版》”自然语言处理“学习笔记PART1，包括word2vec的概念和实现。</p>
+<a id="more"></a>
+
+<h1 id="word2vec"><a href="#word2vec" class="headerlink" title="word2vec"></a>word2vec</h1><p>顾名思义，词向量是用来表示词的向量，也可被认为是词的特征向量或表征。把词映射为实数域向量的技术也叫词嵌入（word embedding）。</p>
+<p>word2vec工具包含了两个模型，即跳字模型（skip-gram）[2] 和连续词袋模型（continuous bag of words，CBOW）[3]。接下来让我们分别介绍这两个模型以及它们的训练方法。</p>
+<h2 id="Skip-gram"><a href="#Skip-gram" class="headerlink" title="Skip-gram"></a>Skip-gram</h2><h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><p>以中间词预测周围的词。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-13%20%E4%B8%8B%E5%8D%882.11.08.png" alt="alt"><br>要注意的是，每个词对应两个词向量，一个是中心词向量，一个是背景词向量。</p>
+<h3 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h3><p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%9B%BEskipgram.jpeg" alt="alt"><br>可知，对于该周围词的梯度计算，我们也需要先算出该中心词对所有周围词的条件概率。</p>
+<p>训练结束后，对于词典中的任一索引为i的词，我们均得到该词作为中心词和背景词的两组词向量。<br>在自然语言处理应用中，一般使用跳字模型的中心词向量作为词的表征向量。</p>
+<h2 id="CBOW"><a href="#CBOW" class="headerlink" title="CBOW"></a>CBOW</h2><p>连续词袋模型与跳字模型类似。与跳字模型最大的不同在于，连续词袋模型假设基于某中心词在文本序列前后的背景词来生成该中心词。</p>
+<h3 id="概念-1"><a href="#概念-1" class="headerlink" title="概念"></a>概念</h3><p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-13%20%E4%B8%8B%E5%8D%885.34.44.png" alt="alt"></p>
+<h3 id="训练-1"><a href="#训练-1" class="headerlink" title="训练"></a>训练</h3><p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-13%20%E4%B8%8B%E5%8D%885.36.22.png" alt="alt"><br>可知，对于该中心词的梯度计算，我们也需要先算出该周围词对所有中心词的条件概率。</p>
+<p>有关其他词向量的梯度同理可得。同跳字模型不一样的一点在于，我们一般使用连续词袋模型的背景（周围）词向量作为词的表征向量。<br><br></p>
+<h1 id="近似训练"><a href="#近似训练" class="headerlink" title="近似训练"></a>近似训练</h1><p>先说说<strong>为什么要采用负采样。</strong></p>
+<p>我们可以回顾上述训练的过程，传统的损失函数是基于softmax运算求条件概率，将窗口内的条件概率进行累乘，然后对其整体“对数化”，使得累乘变累加。然后我们再来关注softmax形式的条件概率，对数化后分号变成了减号。然后我们对该对数化后的条件概率求导，可知最后这个累加符号还是逃不开，要以求 （词典的一个词|中心词）的累加和。</p>
+<p>因此：原罪是softmax运算，导致累加！</p>
+<p>由于条件概率使用了softmax运算，每一步的梯度计算都包含词典大小数目的项的累加。对于含几十万或上百万词的较大词典，每次的梯度计算开销可能过大。</p>
+<p>为了降低该计算复杂度，本节将介绍两种近似训练方法，即<strong>负采样（negative sampling）和层序softmax（hierarchical softmax）</strong>。</p>
+<p>由于跳字模型和连续词袋模型类似，本节仅以跳字模型为例介绍这两种方法。<br><br></p>
+<h2 id="负采样"><a href="#负采样" class="headerlink" title="负采样"></a>负采样</h2><p>首先我要说，以前我看了CS224n讲解后，对负采样的理解是存在误区的，即我觉得它只是一种附加方法，但其实“负采样”完全改变了损失函数的计算方法！</p>
+<p>因为我们想要摒弃softmax求条件概率的分母过于难算，所以<strong>采用sigmoid来求概率</strong>！</p>
+<p>那么，具体来说，给定一个长度为T的文本序列，设时间步t的词为w(t)且背景窗口大小为m，考虑最大化联合概率，是这样的：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-13%20%E4%B8%8B%E5%8D%889.35.07.png" alt="alt"></p>
+<p>然后呢，如果这个P纯粹就是sigmoid(uTv)来算，那么以上最大联合概率就是一个分子为1、分母为(1+exp(-uTv))连乘积的分数，那么你想想，这导致只有当所有词向量相等且值为无穷大时，以上的联合概率才被最大化为1。<br>而且，根据CS224n讲的，我们希望在最大化真是出现在中心词的外围词的出现概率的同时，最小化其他随机词在中心词周围的概率。</p>
+<p>所以，添加负采样，通过采样并添加负类样本使目标函数更有意义。</p>
+<p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-13%20%E4%B8%8B%E5%8D%889.38.15.png" alt="alt"></p>
+<blockquote>
+<p>sigmoid(-x) = 1 - sigmoid(x)</p>
+</blockquote>
+<br>
+
+<h3 id="交叉熵"><a href="#交叉熵" class="headerlink" title="交叉熵"></a>交叉熵</h3><p>由上可知，我们的交叉熵损失函数有两种：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%9B%BE%E4%B8%A4%E4%B8%AA%E4%BA%A4%E5%8F%89%E7%86%B5.png" alt="alt"><br>ps: logistic回归的处理方法就是sigmoid，即这里的h就是sigmoid，但要注意sigmoid的对象是x（有时对象是z=wx+b）。</p>
+<p>这里要重点理解：<br><strong>对于交叉熵，理解关键在于“只想提升属于某标签的概率值”</strong>。</p>
+<p>于是，观察上面两个公式，应用区别在于logestic regression是二分类（标签非1即0），而softmax regression是多分类（即有多个类别，但每个样本只能对应一个标签）。</p>
+<blockquote>
+<ol>
+<li>二分类：表示分类任务中有两个类别，比如我们想识别一幅图片是不是猫。也就是说，训练一个分类器，输入一幅图片，用特征向量x表示，输出是不是猫，用y=0或1表示。二类分类是假设每个样本都被设置了一个且仅有一个标签 0 或者 1。</li>
+<li>多类分类(Multiclass classification): 表示分类任务中有多个类别, 比如对一堆水果图片分类, 它们可能是橘子、苹果、梨等. 多类分类是假设每个样本都被设置了一个且仅有一个标签: 一个水果可以是苹果或者梨, 但是同时不可能是两者。</li>
+<li>多标签分类(Multilabel classification): 给每个样本一系列的目标标签. 可以想象成一个数据点的各属性不是相互排斥的(一个水果既是苹果又是梨就是相互排斥的), 比如一个文档相关的话题. 一个文本可能被同时认为是宗教、政治、金融或者教育相关话题。</li>
+</ol>
+</blockquote>
+<p>然而，他们的底层逻辑是一样的。</p>
+<p><em>对于第一个二元交叉熵公式，我们认为想要突出关注的是正例，所以y=1时增大其概率，而y=0即不属于我们想要的正例时减小其概率（相当于负采样的意思）。<br>对于第二个softmax交叉熵公式，我们认为想要突出关注的是属于真实标签的概率，所以只关注真实标签对应位置的概率值。</em></p>
+<p>当然，softmax交叉熵作为多分类方法，也是可以应用于二分类问题的。</p>
+<p>也就是说，作为这种单标签（无论几分类）问题，softmax交叉熵都可。那么，对于多标签分类问题呢？</p>
+<p>多标签分类问题，一般用sigmoid交叉熵。</p>
+<p>这里我就confused了一阵，<del>logistic回归不也用到sigmoid了，是一样的？</del> 错！<strong>logistic回归中，sigmoid运算作用对象是输入x或z=wx+b，而这里sigmoid交叉熵中的sigmoid运算作用对象是得到的输出值y</strong>！即：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">J = -y真实·log(sigmoid(y输出)) - (<span class="number">1</span>-y真实)·log(<span class="number">1</span>-sigmoid(y输出))</span><br></pre></td></tr></table></figure>
+<p><strong>也就是说，其实sigmoid在这里和softmax运算一样，是作为一种计算概率的方法。<br>但由于sigmoid的运算不需要什么累加项，所以可以说是相互独立的，也就是说各个标签之间互相独立互不影响，所以应用于多标签分类。</strong></p>
+<p>小结：二分类问题logstic回归，多类分类问题softmax回归，多标签分类问题用sigmoid交叉熵损失函数。</p>
+<br>
+
+<h2 id="层序softmax"><a href="#层序softmax" class="headerlink" title="层序softmax"></a>层序softmax</h2><p>使用了二叉树这一数据结构，并根据根结点到叶结点的路径来构造损失函数。其训练中每一步的梯度计算开销与词典大小的对数相关。<br>这里省略讲解。</p>
+<h1 id="word2vec实现"><a href="#word2vec实现" class="headerlink" title="word2vec实现"></a>word2vec实现</h1><p>这里实现skip-gram+负采样，在语料库上训练词嵌入模型。</p>
+<p>首先导入实验所需的包或模块。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> collections</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.utils.data <span class="keyword">as</span> Data</span><br><span class="line"></span><br><span class="line">sys.path.append(<span class="string">".."</span>) </span><br><span class="line"><span class="keyword">import</span> d2lzh_pytorch <span class="keyword">as</span> d2l</span><br><span class="line">print(torch.__version__)</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h2><p>PTB（Penn Tree Bank）是一个常用的小型语料库 。它采样自《华尔街日报》的文章，包括训练集、验证集和测试集。我们将在PTB训练集上训练词嵌入模型。该数据集的每一行作为一个句子。句子中的每个词由空格隔开。</p>
+<p>确保ptb.train.txt已经放在了文件夹../../data/ptb下。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">assert</span> <span class="string">'ptb.train.txt'</span> <span class="keyword">in</span> os.listdir(<span class="string">"../../data/ptb"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">'../../data/ptb/ptb.train.txt'</span>, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = f.readlines() <span class="comment">#一句一句地读</span></span><br><span class="line">    <span class="comment"># st是sentence的缩写</span></span><br><span class="line">    raw_dataset = [st.split() <span class="keyword">for</span> st <span class="keyword">in</span> lines] <span class="comment">#将每一句的单词以空格分开分隔存储</span></span><br><span class="line"></span><br><span class="line"><span class="string">'# sentences: %d'</span> % len(raw_dataset) <span class="comment"># 输出 '# sentences: 42068'</span></span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="词语索引"><a href="#词语索引" class="headerlink" title="词语索引"></a>词语索引</h2><p>为了计算简单，我们<strong>只保留在数据集中至少出现5次的词</strong>。</p>
+<p><em>然后我们为什么要做词语索引呢？因为之后可能进行筛选等操作时，我们希望可以根据下标来获取对应的字符，所以需要这样的dict来映射。</em></p>
+<p>逻辑就是，首先用collections.Counter计算字符在整个数据集中的次数，然后筛选&gt;=5次的，然后再建立对应的索引数组，然后再以此作判断，重新构建数据集。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># tk是token的缩写</span></span><br><span class="line">counter = collections.Counter([tk <span class="keyword">for</span> st <span class="keyword">in</span> raw_dataset <span class="keyword">for</span> tk <span class="keyword">in</span> st]) </span><br><span class="line">counter = dict(filter(<span class="keyword">lambda</span> x: x[<span class="number">1</span>] &gt;= <span class="number">5</span>, counter.items())) <span class="comment">#再把字典中每个元素取出来判断一下作筛选，重新构建字典</span></span><br><span class="line"></span><br><span class="line">idx_to_token = [tk <span class="keyword">for</span> tk,_ <span class="keyword">in</span> counter.item()] <span class="comment">#构建一个字符数组，下标即idx</span></span><br><span class="line">token_to_idx = &#123;tk:idx <span class="keyword">for</span> idx,tk <span class="keyword">in</span> enumerate(idx_to_token)&#125; <span class="comment">#构建字典，idx就取字符数组下标</span></span><br><span class="line"><span class="comment">#重新构建只包含这些token的数据集</span></span><br><span class="line">dataset = [ [token_to_idx] <span class="keyword">for</span> token <span class="keyword">in</span> st <span class="keyword">if</span> tk <span class="keyword">in</span> token_to_idx] <span class="keyword">for</span> st <span class="keyword">in</span> raw_dataset]</span><br><span class="line">num_tokens = sum([len(st) <span class="keyword">for</span> st <span class="keyword">in</span> dataset])</span><br><span class="line"><span class="string">'# tokens: %d'</span> % num_tokens <span class="comment"># 输出 '# tokens: 887100'</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>编程小细节在于sum的对象要是一个数组，所以用[]括起来。</p>
+</blockquote>
+<br>
+
+<h2 id="二次采样"><a href="#二次采样" class="headerlink" title="二次采样"></a>二次采样</h2><p>文本数据中一般会出现一些高频词，如英文中的“the”“a”和“in”。通常来说，在一个背景窗口中，一个词（如“chip”）和较低频词（如“microprocessor”）同时出现比和较高频词（如“the”）同时出现对训练词嵌入模型更有益。因此，训练词嵌入模型时可以对词进行二次采样。</p>
+<p>具体来说，数据集中每个被索引的词wi将有一定概率被丢弃，而该丢弃概率肯定是和词出现频率成反比的，该丢弃概率公式为：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-15%20%E4%B8%8B%E5%8D%884.02.08.png" alt="alt"><br>其中f(wi)是数据集中词wi的个数与总词数之比，常数t是一个超参数。可见，只有当f(wi)&gt;t时，才有可能被丢弃，也就是词出现频率要足够大，即高频词更容易被丢弃。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">discard</span><span class="params">(idx)</span>:</span></span><br><span class="line">    <span class="comment"># 用一个0~1的随机数和丢弃概率作比较，从而实现式中的max运算</span></span><br><span class="line">    <span class="keyword">return</span> random.uniform(<span class="number">0</span>,<span class="number">1</span>) &lt; <span class="number">1</span> - math.sqrt(</span><br><span class="line">        <span class="number">1e-4</span> / (counter[idx_to_token[idx]] / num_tokens) )</span><br><span class="line"></span><br><span class="line"><span class="comment">#二次采样</span></span><br><span class="line">subsampled_dataset = [ [tk <span class="keyword">for</span> tk <span class="keyword">in</span> st <span class="keyword">if</span> <span class="keyword">not</span> discard(tk)] <span class="keyword">for</span> st <span class="keyword">in</span> dataset]</span><br><span class="line"></span><br><span class="line"><span class="comment">#统计个数</span></span><br><span class="line"><span class="string">'# tokens: %d'</span> % sum([len(st) <span class="keyword">for</span> st <span class="keyword">in</span> subsampled_dataset]) <span class="comment"># '# tokens: 375875'</span></span><br></pre></td></tr></table></figure>
+<p>通过分析，二次采样后我们去掉了一半左右的词。下面比较一个词在二次采样前后出现在数据集中的次数。高频词“the”的采样率不足1/20，但低频词’join‘则完整地保留了下来。<br><br></p>
+<h2 id="提取窗口"><a href="#提取窗口" class="headerlink" title="提取窗口"></a>提取窗口</h2><p>基于skip-gram的流程，我们显然是需要提取窗口，即提取中心词和它对应的所有背景词。</p>
+<p>这里要注意的是，滑动窗口并非必须是固定长度的！<br>我们每次在整数1和max_window_size（最大背景窗口）之间随机均匀采样一个整数作为背景窗口大小。</p>
+<p><em>代码逻辑：对每个句子而言，每个单词都可作为中心词。因此，对每个中心词而言，生成滑动窗口大小后，获取到该窗口中每个背景词在该句子中的索引，从而添加为背景词。</em></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_centers_and_contexts</span><span class="params">(dataset, max_window_size)</span>:</span></span><br><span class="line">    centers, contexts = [], []</span><br><span class="line">    <span class="keyword">for</span> st <span class="keyword">in</span> dataset:</span><br><span class="line">        <span class="comment">#如果少于两个词的句子，不用管了</span></span><br><span class="line">        <span class="keyword">if</span> len(st)&lt;<span class="number">2</span>:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        <span class="comment">#否则每个词都作为中心词</span></span><br><span class="line">        centers += st <span class="comment">#和centers.append(st)一个意思</span></span><br><span class="line">        <span class="keyword">for</span> center_i <span class="keyword">in</span> range(len(st)):</span><br><span class="line">            window_size = random.randint(<span class="number">1</span>, max_window_size)</span><br><span class="line">            indices = list(range( max(<span class="number">0</span>,center_i-window_size), min(len(st)<span class="number">-1</span>, center_i+window_size)) )</span><br><span class="line">            indices.remove(center_i) <span class="comment">#将该中心词索引排除</span></span><br><span class="line">            contexts.append([st[idx] <span class="keyword">for</span> idx <span class="keyword">in</span> indices])</span><br><span class="line">    <span class="keyword">return</span> centers, contexts</span><br></pre></td></tr></table></figure>
+<p>实验中，我们设最大背景窗口大小为5。下面提取数据集中所有的中心词及其背景词。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">all_centers, all_contexts = get_centers_and_contexts(subsampled_dataset,<span class="number">5</span>)</span><br></pre></td></tr></table></figure>
+<Br>
+
+<h2 id="负采样-1"><a href="#负采样-1" class="headerlink" title="负采样"></a>负采样</h2><p>我们使用负采样来进行近似训练。对于一对中心词和背景词，我们随机采样K个噪声词（实验中设K=5）。<br>根据word2vec论文的建议，噪声词采样概率P(w)设为w词频与总词频之比的0.75次方——作为random.choices的权重参数，即更大的权重的元素更容易被选中。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_negatives</span><span class="params">(all_contexts, sampling_weights, K)</span>:</span></span><br><span class="line"><span class="comment">#all_contexts是所有背景词的索引数组</span></span><br><span class="line"><span class="comment">#sampling_weights是噪声词采样的权重参数</span></span><br><span class="line"><span class="comment">#K是指：每一对中心词和背景词的条件概率计算需要K个噪声词</span></span><br><span class="line">    all_negatives, neg_candidates, i = [], [], <span class="number">0</span></span><br><span class="line">    population = list(range(len(sampling_weights))) <span class="comment">#生成词典索引数组</span></span><br><span class="line">    <span class="comment">#对于一个窗口（即一组背景词）</span></span><br><span class="line">    <span class="keyword">for</span> contexts <span class="keyword">in</span> all_contexts:</span><br><span class="line">        negatives = []</span><br><span class="line">        <span class="comment">#如果噪声词没够（背景词*K）个，则继续采样噪声词</span></span><br><span class="line">        <span class="keyword">while</span> len(negatives) &lt; len(contexts)*K:</span><br><span class="line">            <span class="keyword">if</span> i == len(neg_candidates): <span class="comment">#候选噪声词数组为空时，通过random.choices构造候选噪声词数组</span></span><br><span class="line">            <span class="comment"># 根据每个词的权重（sampling_weights）随机生成k个词的索引作为噪声词。</span></span><br><span class="line">                i, neg_candidates = <span class="number">0</span>, random.choices(population, sampling_weights, k=int(<span class="number">1e5</span>)) <span class="comment">#k选取次数设大点，反正候选元素整多点好</span></span><br><span class="line">            neg = negcandidates[i]</span><br><span class="line">            i += <span class="number">1</span></span><br><span class="line">            <span class="comment">#噪声词不能是背景词</span></span><br><span class="line">            <span class="keyword">if</span> neg <span class="keyword">not</span> <span class="keyword">in</span> set(contexts):</span><br><span class="line">                negatives.append(neg)</span><br><span class="line">        <span class="comment">#出while循环表示该窗口的噪声词取够了</span></span><br><span class="line">        all_negatives.append(negatives)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> all_negatives</span><br><span class="line"></span><br><span class="line"><span class="comment">#构造采样噪声词所用的权重参数</span></span><br><span class="line">sampling_weights = [counter[w]**<span class="number">0.75</span> <span class="keyword">for</span> w <span class="keyword">in</span> idx_to_token] </span><br><span class="line"></span><br><span class="line"><span class="comment">#调用函数 取得所有噪声词</span></span><br><span class="line">all_negatives = get_negatives(all_contexts, sampling_weights, <span class="number">5</span>)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>random.choices(population,weights=None,*,cum_weights=None,k=1)</strong><br>Python3.6版本新增。<br>population：集群。<br>weights：相对权重。<br>cum_weights：累加权重。<br>k：选取次数。<br>作用：从集群中随机选取k次数据，返回一个列表，可以设置权重。<br>注意每次选取都不会影响原序列，每一次选取都是基于原序列。<br>举例：<br>import random<br>a = [1,2,3,4,5]<br>#1 列表a中的各个成员出现概率基本持平。<br>print(random.choices(a,k=5))<br>#2 [3,3,3,3,3]结果。<br>print(random.choices(a,weights=[0,0,1,0,0],k=5))<br>#3 列表a中的各个成员出现概率基本持平。<br>print(random.choices(a,weights=[1,1,1,1,1],k=5))<br>#4 [1,1,1,1,1]结果。因为累加到第一个元素的权重就=1了<br>print(random.choices(a,cum_weights=[1,1,1,1,1],k=5))</p>
+</blockquote>
+<Br>
+
+<h2 id="读取数据"><a href="#读取数据" class="headerlink" title="读取数据"></a>读取数据</h2><p>我们从数据集中提取所有中心词all_centers，以及每个中心词对应的背景词all_contexts和噪声词all_negatives。我们先定义一个Dataset类。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyDataset</span><span class="params">(torch.utils.data.Dataset)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, centers, contexts, negatives)</span>:</span></span><br><span class="line">        <span class="keyword">assert</span> len(centers) == len(contexts) == len(negatives) </span><br><span class="line">        self.centers = centers</span><br><span class="line">        self.contexts = contexts</span><br><span class="line">        self.negatives = negatives</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__getitem__</span><span class="params">(self, index)</span>:</span> <span class="comment">#取元素</span></span><br><span class="line">        <span class="keyword">return</span> (self.centers[index], self.contexts[index], self.negatives[index])</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__len__</span><span class="params">(self)</span>:</span> <span class="comment">#求长度</span></span><br><span class="line">        <span class="keyword">return</span> len(self.centers)</span><br></pre></td></tr></table></figure>
+<p>接下来，我们将随机小批量来读取它们。</p>
+<p>整个读取的逻辑是，我们是打算用DataLoader来读，这里重点强调关于<strong>DataLoader的用法</strong>：</p>
+<blockquote>
+<p>1）<strong>参数dataset</strong>，要么是torch.utils.data.Dataset类的对象，要么是继承自torch.utils.data.Dataset类的自定义类的对象。注意，如果是自定义的类的对象，则collate_fn预处理函数的输入则是该类对象的batch_size个元素，这些元素是通过getitem取得（<em>而这里getitem自定义<em>成中心词+背景词+噪声词）。<br>2）*</em>参数collate_fn*<em>，是用来处理不同情况下的输入dataset的封装，一般采用默认即可，但</em>我们这里我们要预处理数据，所以之后会自定义预处理batchify函数作为该参数值。</em></p>
+</blockquote>
+<h3 id="预处理"><a href="#预处理" class="headerlink" title="预处理"></a>预处理</h3><p>但是有个问题：ni+mi不一定都相等，所以我们<strong>用0来填充直至连结后的长度相同，即长度均为max(ni+mi)</strong>。</p>
+<p>为了避免填充项对损失函数计算的影响，我们构造了<strong>掩码变量masks</strong>，其每一个元素分别与连结后的背景词和噪声词contexts_negatives中的元素一一对应。当contexts_negatives变量中的某个元素<strong>为填充项时，相同位置的掩码变量masks中的元素取0，否则取1</strong>。</p>
+<p>为了区分正类和负类，我们还需要将contexts_negatives变量中的<em>背景词和噪声词区分开来</em>。依据掩码变量的构造思路，我们只需创建与contexts_negatives变量形状相同的标签变量labels，并<strong>将与背景词（正类）对应的元素设1，其余取0</strong>。</p>
+<p><em>小结以上两段：掩码masks用于区分填充项；labels用于区分背景词。</em></p>
+<h3 id="批量读"><a href="#批量读" class="headerlink" title="批量读"></a>批量读</h3><p>下面我们实现这个小批量读取函数batchify。它的小批量输入data是一个长度为批量大小的列表，其中每个元素分别包含中心词center、背景词context和噪声词negative。该函数返回的小批量数据符合我们需要的格式，例如，包含了掩码变量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">batchify</span><span class="params">(data)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    "用作DataLoader的参数collate_fn: 输入是个长为batchsize的list, 且list中的每个元素都是Dataset类调用__getitem__得到的结果</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="comment">#求最大长度</span></span><br><span class="line">    max_len = max(len(c)+len(n) <span class="keyword">for</span> _,c,n <span class="keyword">in</span> data)</span><br><span class="line">    centers, contexts_negatives, masks, labels = [], [], [], []</span><br><span class="line">    <span class="keyword">for</span> center, context, negative <span class="keyword">in</span> data:</span><br><span class="line">        centers += [center]</span><br><span class="line">        cur_len = len(context) + len(negative) <span class="comment">#目前长度</span></span><br><span class="line">        <span class="comment">#0填充至最大长度</span></span><br><span class="line">        contexts_negatives += [context + negative + [<span class="number">0</span>] * (max_len - cur_len)] </span><br><span class="line">        <span class="comment">#masks标识填充项为0</span></span><br><span class="line">        masks += [[<span class="number">1</span>]*cur_len + [<span class="number">0</span>]*(max_len-cur_len)]</span><br><span class="line">        <span class="comment">#labels标识背景词为1</span></span><br><span class="line">        labels += [[<span class="number">1</span>]*len(contexts) + [<span class="number">0</span>]*len(max_len - len(contexts))]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> (torch.tensor(centers).view(<span class="number">-1</span>, <span class="number">1</span>), torch.tensor(contexts_negatives),</span><br><span class="line">            torch.tensor(masks), torch.tensor(labels))</span><br></pre></td></tr></table></figure>
+<p>我们用刚刚定义的batchify函数指定DataLoader实例中小批量的读取方式，然后打印读取的第一个批量中各个变量的形状。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">batch_size = <span class="number">512</span></span><br><span class="line">num_workers = <span class="number">0</span> <span class="keyword">if</span> sys.platform.startswith(<span class="string">'win32'</span>) <span class="keyword">else</span> <span class="number">4</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#实例化自己定义的数据类</span></span><br><span class="line">dataset = MyDataset(all_centers, </span><br><span class="line">                    all_contexts, </span><br><span class="line">                    all_negatives)</span><br><span class="line">data_iter = Data.DataLoader(dataset, batch_size, shuffle=<span class="literal">True</span>,</span><br><span class="line">                            collate_fn=batchify, </span><br><span class="line">                            num_workers=num_workers)</span><br><span class="line"><span class="keyword">for</span> batch <span class="keyword">in</span> data_iter:</span><br><span class="line">    <span class="keyword">for</span> name, data <span class="keyword">in</span> zip([<span class="string">'centers'</span>, <span class="string">'contexts_negatives'</span>, <span class="string">'masks'</span>,</span><br><span class="line">                           <span class="string">'labels'</span>], batch):</span><br><span class="line">        print(name, <span class="string">'shape:'</span>, data.shape)</span><br><span class="line">    <span class="keyword">break</span></span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">centers shape: torch.Size([<span class="number">512</span>, <span class="number">1</span>])</span><br><span class="line">contexts_negatives shape: torch.Size([<span class="number">512</span>, <span class="number">60</span>])</span><br><span class="line">masks shape: torch.Size([<span class="number">512</span>, <span class="number">60</span>])</span><br><span class="line">labels shape: torch.Size([<span class="number">512</span>, <span class="number">60</span>])</span><br></pre></td></tr></table></figure>
+<p>这里最后关于zip的用法有点意思，学习<strong>zip函数用法</strong>：</p>
+<blockquote>
+<p>zip()是Python的一个内建函数，它接受一系列可迭代的对象作为参数，<strong>将对象中对应的元素打包成一个个tuple（元组），然后返回由这些tuples组成的list（列表）。</strong><br>1.<strong>把两个列表合成一个列表</strong>：<br>seq = [‘one’, ‘two’, ‘three’]<br>seq1=[1,2,3]<br>seq3=[4,5,6]<br>list(zip(seq,seq1))<br>out：[(‘one’, 1), (‘two’, 2), (‘three’, 3)]<br>2.<strong>把两个列表合成一个字典</strong>：<br>dict(zip(seq,seq1))<br>out：{‘one’: 1, ‘three’: 3, ‘two’: 2}<br>3.<strong>采用*把zip好的tuple给拆掉</strong>：<br>zz=zip(seq,seq1)<br>list(zip(*zz))<br>out: [(‘one’, ‘two’, ‘three’), (1, 2, 3)]</p>
+</blockquote>
+<h2 id="模型"><a href="#模型" class="headerlink" title="模型"></a>模型</h2><p>我们将通过使用嵌入层和小批量乘法来实现跳字模型。</p>
+<h3 id="嵌入层"><a href="#嵌入层" class="headerlink" title="嵌入层"></a>嵌入层</h3><p><code>nn.Embedding(num_embeddings=20, embedding_dim=4)</code>实例得到。嵌入层的权重是一个矩阵，其行数为词典大小，列数为每个词向量的维度。即：每行是一个词的词向量。</p>
+<p><em>注：在这里，我们是将词的索引即把数字传入，*</em>所以embedding的对象是索引值，对每个索引值生成一个词向量。***</p>
+<p><strong>嵌入层的输入为词的索引</strong>。输入一个词的索引i，嵌入层返回权重矩阵的第ii行作为它的词向量。下面我们将形状为(2, 3)的索引输入进嵌入层，由于词向量的维度为4，我们得到形状为(2, 3, 4)的词向量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = torch.tensor([[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>], [<span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>]], dtype=torch.long)</span><br><span class="line">embed(x)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">tensor([[[<span class="number">-0.6690</span>,  <span class="number">1.2385</span>, <span class="number">-1.7482</span>,  <span class="number">0.2986</span>],</span><br><span class="line">         [ <span class="number">0.1193</span>,  <span class="number">0.1554</span>,  <span class="number">0.5038</span>, <span class="number">-0.3619</span>],</span><br><span class="line">         [<span class="number">-0.0347</span>, <span class="number">-0.2806</span>,  <span class="number">0.3854</span>, <span class="number">-0.8600</span>]],</span><br><span class="line"></span><br><span class="line">        [[<span class="number">-0.6479</span>, <span class="number">-1.1424</span>, <span class="number">-1.1920</span>,  <span class="number">0.3922</span>],</span><br><span class="line">         [ <span class="number">0.6334</span>, <span class="number">-0.0703</span>,  <span class="number">0.0830</span>, <span class="number">-0.4782</span>],</span><br><span class="line">         [ <span class="number">0.1712</span>,  <span class="number">0.8098</span>, <span class="number">-1.2208</span>,  <span class="number">0.4169</span>]]], grad_fn=&lt;EmbeddingBackward&gt;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="小批量乘法"><a href="#小批量乘法" class="headerlink" title="小批量乘法"></a>小批量乘法</h3><p>我们可以使用小批量乘法运算<code>torch.bmm</code>对两个小批量中的矩阵一一做乘法。给定两个形状分别为(n, a, b)和(n, b, c)的Tensor，小批量乘法输出的形状为(n, a, c)。</p>
+<p><em>为什么要用小批量乘法？因为由嵌入层输出结果可知，每个数字都会变成一个词向量，所以对于一个batch，进行嵌入层处理后，输出的一个center变量的形状为（batch_size, 1, embedding_dim），输出的一个contexts_and_negatives变量的形状为（batch_size, max_len, embedding_dim）。而我们相乘只要后两维。</em></p>
+<p>由此，输出中的每个元素是中心词向量与背景词向量和噪声词向量的内积。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">skip_gram</span><span class="params">(center, contexts_and_negatives, embed_v, embed_u)</span>:</span></span><br><span class="line">    <span class="comment">#将索引放到嵌入层里转换为词向量</span></span><br><span class="line">    v = embed_v(center) </span><br><span class="line">    u = embed_u(contexts_and_negatives)</span><br><span class="line">    <span class="comment"># v的维度为（batch_size, 1, embedding_dim）</span></span><br><span class="line">    <span class="comment"># u的维度本为（batch_size, max_len, embedding_dim），需改为（batch_size, embedding_dim, max_len)</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    pred = torch.bmm(v, u.permute(<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>))</span><br><span class="line">    <span class="keyword">return</span> pred</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="训练模型"><a href="#训练模型" class="headerlink" title="训练模型"></a>训练模型</h2><p>在训练词嵌入模型之前，我们需要定义模型的损失函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SigmoidBinaryCrossEntropyLoss</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        super(SigmoidBinaryCrossEntropyLoss, self).__init__()</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, inputs, targets, mask=None)</span>:</span></span><br><span class="line">    <span class="comment"># inputs：小批量乘法得到的运算结果的一个batch即（batch_size, max_len)</span></span><br><span class="line">    <span class="comment"># targets: 是一个batch的label向量（batch_size, max_len)，标记的是背景词和噪声词，即正负例标签</span></span><br><span class="line">    <span class="comment"># mask: 一个batch的掩码（batch_size, max_len)，标记的是非填充项1和填充项0，作为损失函数中每一项的权重，从而让填充项不参与。</span></span><br><span class="line">    inputs, targets, mask = inputs.float(), targets.float(), mask.float()</span><br><span class="line">    res = nn.functional.binary_cross_entropy_with_logits(inputs, targets, reduction=<span class="string">"none"</span>, weight=mask)</span><br><span class="line">    <span class="keyword">return</span> res.sum(dim=<span class="number">1</span>) <span class="comment">#累加</span></span><br><span class="line"></span><br><span class="line">loss = SigmoidBinaryCrossEntropyLoss()</span><br></pre></td></tr></table></figure>
+<p>说实话这个代码我理解了好一会儿，原因在于不理解这里调用的损失函数<code>nn.functional.binary_cross_entropy_with_logits</code>做了什么处理，这里解释一下：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%9B%BEword2vec%E8%AE%B2%E8%A7%A3.jpeg" alt="alt"></p>
+<Br>
+
+<h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>我们分别构造中心词和背景词的嵌入层，并将超参数词向量维度embed_size设置成100。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">embed_size = <span class="number">100</span></span><br><span class="line">net = nn.Sequentail(</span><br><span class="line">        nn.Embedding(num_embeddings=len(idx_to_token), embedding_dim=embed_size),</span><br><span class="line">        nn.Embedding(num_embeddings=len(idx_to_token),</span><br><span class="line">        embedding_dim=embed_size)</span><br><span class="line">        )</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="定义训练函数"><a href="#定义训练函数" class="headerlink" title="定义训练函数"></a>定义训练函数</h2><p>下面定义训练函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train</span><span class="params">(net, lr, num_epochs)</span>:</span></span><br><span class="line">    device = torch.device(<span class="string">'cuda'</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">'cpu'</span>)</span><br><span class="line">    print(<span class="string">"train on"</span>, device)</span><br><span class="line">    net = net.to(device)</span><br><span class="line">    optimizer = torch.optim.Adam(net.parameters(), lr=lr)</span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> range(num_epochs):</span><br><span class="line">        start, l_sum, n = time.time(), <span class="number">0.0</span>, <span class="number">0</span></span><br><span class="line">        <span class="keyword">for</span> batch <span class="keyword">in</span> data_iter:</span><br><span class="line">            center, context_negative, mask, label = [d.to(device) <span class="keyword">for</span> d <span class="keyword">in</span> batch] <span class="comment">#一个batch</span></span><br><span class="line">            </span><br><span class="line">            pred = skip_gram(center, context_negative, net[<span class="number">0</span>], net[<span class="number">1</span>]) <span class="comment">#后面俩参数分别对应中心词和背景词的嵌入层。</span></span><br><span class="line">            </span><br><span class="line">            <span class="comment">#以上pred得到中心词与背景词、噪声词的乘积结果。</span></span><br><span class="line">            <span class="comment">#由小批量乘法知，pred维度为(batch_size, 1, max_len)，</span></span><br><span class="line">            <span class="comment">#所以传入loss函数前先view成(batch_size, max_len)便于直接当成输出y，在loss中与label作比较。</span></span><br><span class="line">        </span><br><span class="line">            l = (loss(pred.view(label.shape), label, mask) / mask.float().sum(dim=<span class="number">1</span>).mean()</span><br><span class="line">            <span class="comment">#即累加后再对每个样本的输出按非填充项个数来求平均，变成(batch_size,1)维度，最后求mean即得到一个数，即该batch的loss</span></span><br><span class="line"></span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            l.backward()</span><br><span class="line">            optimizer.step()</span><br><span class="line">            </span><br><span class="line">            l_sum += l</span><br><span class="line">            n +=<span class="number">1</span> </span><br><span class="line">        </span><br><span class="line">        print(<span class="string">'epoch %d, loss %.2f, time %.2fs'</span></span><br><span class="line">              % (epoch + <span class="number">1</span>, l_sum / n, time.time() - start))</span><br></pre></td></tr></table></figure>
+<p>现在我们就可以使用负采样训练跳字模型了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">train(net, <span class="number">0.01</span>, <span class="number">10</span>)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">train on cpu</span><br><span class="line">epoch <span class="number">1</span>, loss <span class="number">1.97</span>, time <span class="number">74.53</span>s</span><br><span class="line">epoch <span class="number">2</span>, loss <span class="number">0.62</span>, time <span class="number">81.85</span>s</span><br><span class="line">epoch <span class="number">3</span>, loss <span class="number">0.45</span>, time <span class="number">74.49</span>s</span><br><span class="line">epoch <span class="number">4</span>, loss <span class="number">0.39</span>, time <span class="number">72.04</span>s</span><br><span class="line">epoch <span class="number">5</span>, loss <span class="number">0.37</span>, time <span class="number">72.21</span>s</span><br><span class="line">epoch <span class="number">6</span>, loss <span class="number">0.35</span>, time <span class="number">71.81</span>s</span><br><span class="line">epoch <span class="number">7</span>, loss <span class="number">0.34</span>, time <span class="number">72.00</span>s</span><br><span class="line">epoch <span class="number">8</span>, loss <span class="number">0.33</span>, time <span class="number">74.45</span>s</span><br><span class="line">epoch <span class="number">9</span>, loss <span class="number">0.32</span>, time <span class="number">72.08</span>s</span><br><span class="line">epoch <span class="number">10</span>, loss <span class="number">0.32</span>, time <span class="number">72.05</span>s</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h2><p>训练好词嵌入模型之后，我们可以根据两个词向量的余弦相似度表示词与词之间在语义上的相似度。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">get_similar_tokens(query_token, k, embed):</span><br><span class="line"><span class="string">'''</span></span><br><span class="line"><span class="string">    query_token: 想要查询的字符</span></span><br><span class="line"><span class="string">    k: 找k个相似字符出来</span></span><br><span class="line"><span class="string">    embed：训练好的嵌入层模型</span></span><br><span class="line"><span class="string">'''</span></span><br><span class="line">    W = embed.weight.data <span class="comment">#嵌入层的权重值</span></span><br><span class="line">    x = W[token_to_idx[query_token]] <span class="comment">#拿到这个词的权重值</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 计算余弦值。</span></span><br><span class="line">    <span class="comment"># 添加的1e-9是为了数值稳定性</span></span><br><span class="line">    cos = torch.matmul(W, x.view(<span class="number">-1</span>,<span class="number">1</span>)) / ( torch.sum(W*W, dim=<span class="number">1</span>).sqrt * torch.sum(x*x, dim=<span class="number">1</span>).sqrt + <span class="number">1e-9</span> )</span><br><span class="line">    <span class="comment"># cos结果维度为（词典长度nums_embedding, 1)</span></span><br><span class="line"></span><br><span class="line">    _, topk = torch.topk(cos, k=k+<span class="number">1</span>) <span class="comment">#多一个 因为自己不算</span></span><br><span class="line">    topk = topk.cpu().numpy()</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> topk[<span class="number">1</span>:]: <span class="comment">#除去自己</span></span><br><span class="line">        print(<span class="string">'cosine sim=%.3f: %s'</span> % (cos[i], (idx_to_token[i])))</span><br><span class="line"></span><br><span class="line">get_similar_tokens(<span class="string">'chip'</span>, <span class="number">3</span>, net[<span class="number">0</span>]) <span class="comment">#中心词嵌入层模型</span></span><br></pre></td></tr></table></figure>
+<p>输出：<br>可以看到，使用训练得到的词嵌入模型时，与词“chip”语义最接近的词大多与芯片有关。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cosine sim=<span class="number">0.478</span>: hard-disk</span><br><span class="line">cosine sim=<span class="number">0.446</span>: intel</span><br><span class="line">cosine sim=<span class="number">0.440</span>: drives</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/16/Word2Vec/" data-id="ck6ozl6hp0000ps6c3lsihrk3"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8A%A8%E6%89%8B%E5%AD%A6%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">动手学深度学习</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/02/12/%E5%BE%AA%E7%8E%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">循环神经网络</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
