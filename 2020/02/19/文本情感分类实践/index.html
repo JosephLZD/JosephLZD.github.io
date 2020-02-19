@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    文本情感分类实践 |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-文本情感分类实践" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      文本情感分类实践
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/02/19/%E6%96%87%E6%9C%AC%E6%83%85%E6%84%9F%E5%88%86%E7%B1%BB%E5%AE%9E%E8%B7%B5/" class="article-date">
+  <time datetime="2020-02-19T03:47:10.000Z" itemprop="datePublished">2020-02-19</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>《动手学深度学习pytorch版》“文本情感分类”学习笔记，包括用RNN和CNN实现两个版本。</p>
+<a id="more"></a>
+<h1 id="RNN实现"><a href="#RNN实现" class="headerlink" title="RNN实现"></a>RNN实现</h1><p>在本节中，我们将应用预训练的词向量和含多个隐藏层的双向循环神经网络，来判断一段不定长的文本序列中包含的是正面还是负面的情绪。</p>
+<p>在实验开始前，导入所需的包或模块。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> collections</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"><span class="keyword">import</span> tarfile</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"><span class="keyword">import</span> torchtext.vocab <span class="keyword">as</span> Vocab</span><br><span class="line"><span class="keyword">import</span> torch.utils.data <span class="keyword">as</span> Data</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line">sys.path.append(<span class="string">".."</span>) </span><br><span class="line"><span class="keyword">import</span> d2lzh_pytorch <span class="keyword">as</span> d2l</span><br><span class="line"></span><br><span class="line">os.environ[<span class="string">"CUDA_VISIBLE_DEVICES"</span>] = <span class="string">"0"</span></span><br><span class="line">device = torch.device(<span class="string">'cuda'</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">'cpu'</span>)</span><br><span class="line"></span><br><span class="line">DATA_ROOT = <span class="string">"/S1/CSCL/tangss/Datasets"</span></span><br></pre></td></tr></table></figure>
+<Br>
+
+<p>我们使用斯坦福的IMDb数据集（Stanford’s Large Movie Review Dataset）作为文本情感分类的数据集 [1]。这个数据集分为训练和测试用的两个数据集，分别包含25,000条从IMDb下载的关于电影的评论。在每个数据集中，标签为“正面”和“负面”的评论数量相等。</p>
+<Br>
+
+<h2 id="读取数据"><a href="#读取数据" class="headerlink" title="读取数据"></a>读取数据</h2><p>首先下载这个数据集到DATA_ROOT路径下，然后解压。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">fname = os.path.join(DATA_ROOT, <span class="string">"aclImdb_v1.tar.gz"</span>)</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(os.path.join(DATA_ROOT, <span class="string">"aclImdb"</span>)):</span><br><span class="line">    print(<span class="string">"从压缩包解压..."</span>)</span><br><span class="line">    <span class="keyword">with</span> tarfile.open(fname, <span class="string">'r'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.extractall(DATA_ROOT)</span><br></pre></td></tr></table></figure>
+<p>接下来，读取训练数据集和测试数据集。每个样本是一条评论及其对应的标签：1表示“正面”，0表示“负面”。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> tqdm <span class="keyword">import</span> tqdm</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">read_imdb</span><span class="params">(folder=<span class="string">'train'</span>, data_root=<span class="string">"/S1/CSCL/tangss/Datasets/aclImdb"</span>)</span>:</span></span><br><span class="line">    data = []</span><br><span class="line">    <span class="comment">#分别进入pos和neg文件夹</span></span><br><span class="line">    <span class="keyword">for</span> label <span class="keyword">in</span> [<span class="string">'pos'</span>, <span class="string">'neg'</span>]:</span><br><span class="line">        folder_name = os.path.join(data_root, folder, label)</span><br><span class="line">        <span class="comment">#对文件夹中的每个文件进行遍历、打开读取内容</span></span><br><span class="line">        <span class="keyword">for</span> file <span class="keyword">in</span> tqdm(os.listdir(folder_name)):</span><br><span class="line">            <span class="keyword">with</span> open(os.path.join(folder_name, file), <span class="string">'rb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">                review = f.read().decode(<span class="string">'utf-8'</span>).replace(<span class="string">'\n'</span>,<span class="string">''</span>).lower()</span><br><span class="line">                data.append([review, <span class="number">1</span> <span class="keyword">if</span> label==<span class="string">'pos'</span> <span class="keyword">else</span> <span class="number">0</span>])</span><br><span class="line">    random.shuffle(data) </span><br><span class="line">    <span class="keyword">return</span> data</span><br><span class="line"></span><br><span class="line">train_data, test_data = read_imdb(<span class="string">'train'</span>), read_imdb(<span class="string">'test'</span>)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>for file in tqdm(os.listdir(folder_name)): 这句话，tqdm是用来显示进度条的。</p>
+</blockquote>
+<h2 id="预处理"><a href="#预处理" class="headerlink" title="预处理"></a>预处理</h2><p>我们需要对每条评论做<strong>分词</strong>，从而得到分好词的评论。这里定义的get_tokenized_imdb函数使用最简单的方法：基于空格进行分词。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_tokenized_imdb</span><span class="params">(data)</span>:</span></span><br><span class="line"><span class="string">'''</span></span><br><span class="line"><span class="string">    data: list of [string,label]</span></span><br><span class="line"><span class="string">'''</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">tokenizer</span><span class="params">(text)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> [tk.lower() <span class="keyword">for</span> tk <span class="keyword">in</span> text.split(<span class="string">' '</span>)]</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> [tokenizer(text) <span class="keyword">for</span> text,_ <span class="keyword">in</span> data]</span><br></pre></td></tr></table></figure>
+<p>现在，我们可以根据分好词的训练数据集来<strong>创建词典vocab了。我们在这里过滤掉了出现次数少于5的词</strong>。</p>
+<p>要注意这里Vocab.Vocab创建方式，创建好vocab后可以调用stoi或itos或len函数进行后续操作。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_vocab_imdb</span><span class="params">(data)</span>:</span></span><br><span class="line">    tokenized_data = get_tokenized_imdb(data)</span><br><span class="line">    counter = collections.Counter([tk <span class="keyword">for</span> st <span class="keyword">in</span> tokenized_data <span class="keyword">for</span> tk <span class="keyword">in</span> st])</span><br><span class="line">    <span class="keyword">return</span> Vocab.Vocab(counter, min_freq=<span class="number">5</span>)</span><br><span class="line"></span><br><span class="line">vocab = get_vocab_imdb(train_data)</span><br><span class="line"><span class="string">'# words in vocab:'</span>, len(vocab) <span class="comment">#46151</span></span><br></pre></td></tr></table></figure>
+<p>因为每条评论长度不一致所以不能直接组合成小批量，我们定义preprocess_imdb函数对每条评论进行分词，并<strong>通过词典转换成词索引，然后通过截断或者补0来将每条评论长度固定成500</strong>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">preprocess_imdb</span><span class="params">(data, vocab)</span>:</span></span><br><span class="line">    max_l = <span class="number">500</span></span><br><span class="line">    <span class="comment"># 将每条评论通过截断或者补0，使得长度变成500</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pad</span><span class="params">(x)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> x[:max_l] <span class="keyword">if</span> len(x)&gt;max_l <span class="keyword">else</span> x + [<span class="number">0</span>] * (max_l-len(x))</span><br><span class="line"></span><br><span class="line">    <span class="comment">#获取数据（已分词）</span></span><br><span class="line">    tokenized_data = get_tokenized_imdb(data)</span><br><span class="line">    <span class="comment">#通过vocab来将字符-&gt;索引，然后用pad函数截断或填充</span></span><br><span class="line">    <span class="comment">#细细品品括号的使用</span></span><br><span class="line">    features = torch.tensor([pad([vocab.stoi(word) <span class="keyword">for</span> word <span class="keyword">in</span> words]) <span class="keyword">for</span> words <span class="keyword">in</span> tokenized_data])</span><br><span class="line">    labels = torch.tensor([l <span class="keyword">for</span> _,l <span class="keyword">in</span> data])</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> features, labels</span><br></pre></td></tr></table></figure>
+<Br>
+
+<h2 id="创建数据迭代器"><a href="#创建数据迭代器" class="headerlink" title="创建数据迭代器"></a>创建数据迭代器</h2><p>现在，我们创建数据迭代器。每次迭代将返回一个batch的数据。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">batch_size = <span class="number">64</span></span><br><span class="line">train_set = Data.TensorDataset(*preprocess_imdb(train_data, vocab)) <span class="comment">#用*表示传入的参数是元组</span></span><br><span class="line">test_set = Data.TensorDataset(*preprocess_imdb(test_data, vocab))</span><br><span class="line">train_iter = Data.DataLoader(train_set, batch_size, shuffle=<span class="literal">True</span>)</span><br><span class="line">test_iter = Data.DataLoader(test_set, batch_size, shuffle=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="RNN模型"><a href="#RNN模型" class="headerlink" title="RNN模型"></a>RNN模型</h2><p>在这个模型中，每个词先通过嵌入层得到特征向量。然后，我们使用双向循环神经网络对特征序列进一步编码得到序列信息。最后，我们将编码的序列信息通过全连接层变换为输出。具体来说，我们可以将双向长短期记忆在最初时间步和最终时间步的隐藏状态连结，作为特征序列的表征传递给输出层分类。在下面实现的BiRNN类中，Embedding实例即嵌入层，LSTM实例即为序列编码的隐藏层，Linear实例即生成分类结果的输出层。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BiRNN</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, vocab, embed_size, num_hiddens, num_layers)</span></span></span><br><span class="line"><span class="function">        <span class="title">super</span><span class="params">(BiRNN, self)</span>.<span class="title">__init__</span><span class="params">()</span></span></span><br><span class="line">        self.embedding = nn.Embedding(len(vocab), embed_size)</span><br><span class="line">        <span class="comment"># bidirectional设为True即得到双向循环神经网络</span></span><br><span class="line">        self.encoder = nn.LSTM(input_size=embed_size, hidden_size=num_hiddens, num_layers=num_layers, bidirectional=<span class="literal">True</span>)</span><br><span class="line">        <span class="comment">#初始时间步和最终时间步的隐藏状态来作为全连接层输入，所以输入维度为2*2*num_hiddens。当然输出即2个数，理解为属于1或0的概率</span></span><br><span class="line">        self.decoder = nn.Linear(<span class="number">4</span>*num_hiddens, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, inputs)</span>:</span></span><br><span class="line">        <span class="comment"># 维度说明见代码之后的讲解</span></span><br><span class="line">        <span class="comment"># 先词嵌入</span></span><br><span class="line">        embeddings = self.embedding(inputs.permute(<span class="number">1</span>,<span class="number">0</span>))</span><br><span class="line">        <span class="comment"># 传入LSTM并获取该batch的处理输出</span></span><br><span class="line">        outputs, _ = self.encoder(embeddings) <span class="comment">#output, (h,c)</span></span><br><span class="line">        <span class="comment"># ouputs每行即对应一个时间序列</span></span><br><span class="line">        <span class="comment"># 我们需要连结初始时间步和最终时间步的隐藏状态作为全连接层输入。它的形状为</span></span><br><span class="line">        <span class="comment"># (批量大小, 4 * 隐藏单元个数)。</span></span><br><span class="line">        encoding = torch.cat((outputs[<span class="number">0</span>], outputs[<span class="number">-1</span>]), dim=<span class="number">-1</span>) </span><br><span class="line">        outs = self.decoder(encoding)</span><br><span class="line">        <span class="keyword">return</span> outs</span><br></pre></td></tr></table></figure>
+<p><em>这里必须解释一下（也是最后一遍！）为什么在词嵌入前将inputs转置。<br>这个其实是回顾我们“循环神经网络”学习笔记中的要点。<br>已知inputs是一个batch的样本数据，即每行是一个样本，而每个样本由多个字符组成，本质上即是由多个时间步组成。其实每次传入RNN的需要是一个时间步并得到输出及隐藏状态H，然后传入下一个时间步的时候用到保存的隐藏状态H，以此类推。也就是说，其实每次RNN的输入是一个字符。但对于我们小批量处理来说，就会把处在同一个时间步的batch_size个字符作为一次输入，（比如把batch_size个样本第一个字符传入RNN）。<br>在这里，我们现在的inputs每一行是一个样本，有batch_size行，如果转置一下，即每一列是一个样本，而每一行则是处在同一个时间步的batch_size个字符！因此，就符合了LSTM内部规定的以一行为一次输入的要求。于是，将inputs转置后word embedding，然后就可以直接输入到LSTM了。<br>对于LSTM的输出，我们取到outputs，维度是（词数其实也就是时间序列长度，batch_size，神经元个数），对于双向LSTM，我们需要将首尾时间步的输出拼接，即将第一行和最后一行取出拼接，作为最后全连接层的输入。</em></p>
+<p>创建一个含两个隐藏层的双向循环神经网络。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">embed_size, num_hiddens, num_layers = <span class="number">100</span>, <span class="number">100</span>, <span class="number">2</span></span><br><span class="line">net = BiRNN(vocab, embed_size, num_hiddens, num_layers)</span><br></pre></td></tr></table></figure>
+<Br>
+
+<p>然后，我们将用这些词向量作为评论中每个词的特征向量。注意，预训练词向量的维度需要与创建的模型中的嵌入层输出大小embed_size一致。此外，在训练中我们不再更新这些词向量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本函数已保存在d2lzh_torch包中方便以后使用</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">load_pretrained_embedding</span><span class="params">(words, pretrained_vocab)</span>:</span></span><br><span class="line">    <span class="string">"""从预训练好的vocab中提取出words对应的词向量"""</span></span><br><span class="line">    embed = torch.zeros(len(words), pretrained_vocab.vectors[<span class="number">0</span>].shape[<span class="number">0</span>]) <span class="comment"># 初始化为0</span></span><br><span class="line">    oov_count = <span class="number">0</span> <span class="comment"># out of vocabulary</span></span><br><span class="line">    <span class="keyword">for</span> i, word <span class="keyword">in</span> enumerate(words):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="comment">#即把训练好的权值赋给我们</span></span><br><span class="line">            idx = pretrained_vocab.stoi[word]</span><br><span class="line">            embed[i, :] = pretrained_vocab.vectors[idx]</span><br><span class="line">        <span class="keyword">except</span> KeyError:</span><br><span class="line">            oov_count += <span class="number">1</span></span><br><span class="line">    <span class="keyword">if</span> oov_count &gt; <span class="number">0</span>:</span><br><span class="line">        print(<span class="string">"There are %d oov words."</span> % oov_count) <span class="comment">#210202个在训练好的词嵌入里找不到的词</span></span><br><span class="line">    <span class="keyword">return</span> embed</span><br><span class="line"></span><br><span class="line">net.embedding.weight.data.copy_(</span><br><span class="line">    load_pretrained_embedding(vocab.itos, glove_vocab))</span><br><span class="line">net.embedding.weight.requires_grad = <span class="literal">False</span> <span class="comment"># 直接加载预训练好的, 所以不需要更新它</span></span><br></pre></td></tr></table></figure>
+
+<Br>
+
+<h2 id="训练评价"><a href="#训练评价" class="headerlink" title="训练评价"></a>训练评价</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">lr, num_epochs = <span class="number">0.01</span>, <span class="number">5</span></span><br><span class="line"><span class="comment"># 要过滤掉不计算梯度的embedding参数 采用filter配合lambda来处理</span></span><br><span class="line">optimizer = torch.optim.Adam(filter(<span class="keyword">lambda</span> p: p.requires_grad==<span class="literal">True</span>, net.parameters()), lr=lr)</span><br><span class="line">loss = nn.CrossEntropyLoss()</span><br><span class="line">d2l.train(train_iter, test_iter, net, loss, optimizer, device, num_epochs)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">training on  cuda</span><br><span class="line">epoch <span class="number">1</span>, loss <span class="number">0.5759</span>, train acc <span class="number">0.666</span>, test acc <span class="number">0.832</span>, time <span class="number">250.8</span> sec</span><br><span class="line">epoch <span class="number">2</span>, loss <span class="number">0.1785</span>, train acc <span class="number">0.842</span>, test acc <span class="number">0.852</span>, time <span class="number">253.3</span> sec</span><br><span class="line">epoch <span class="number">3</span>, loss <span class="number">0.1042</span>, train acc <span class="number">0.866</span>, test acc <span class="number">0.856</span>, time <span class="number">253.7</span> sec</span><br><span class="line">epoch <span class="number">4</span>, loss <span class="number">0.0682</span>, train acc <span class="number">0.888</span>, test acc <span class="number">0.868</span>, time <span class="number">254.2</span> sec</span><br><span class="line">epoch <span class="number">5</span>, loss <span class="number">0.0483</span>, train acc <span class="number">0.901</span>, test acc <span class="number">0.862</span>, time <span class="number">251.4</span> sec</span><br></pre></td></tr></table></figure>
+<p>最后，定义预测函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">predict_sentiment</span><span class="params">(net, vocab, sentence)</span>:</span></span><br><span class="line">    <span class="comment"># sentence是一个样本即一个分好词的句子，即词语列表</span></span><br><span class="line">    device = list(net.parameters())[<span class="number">0</span>].device</span><br><span class="line">    sentence = torch.tensor([vocab.stoi[word] <span class="keyword">for</span> word <span class="keyword">in</span> sentence], device=device)</span><br><span class="line">    label = torch.argmax(net(sentence.view(<span class="number">1</span>,<span class="number">-1</span>))), dim=<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">'positive'</span> <span class="keyword">if</span> label.item()==<span class="number">1</span> <span class="keyword">else</span> <span class="string">'negative'</span></span><br></pre></td></tr></table></figure>
+<p><em>这里要强调理解的是：之前如果是多分类的话，这里举例5个类，那么对于一个样本，标签yi的值为0~4，而我们为了比较，也会让神经网络最后一个全连接层输出5个值，每个值对应该样本属于每一类的概率，概率最大则预测为那一类。这里同理，标签yi为positive则为1，为negative则为0，所以RNN全连接层最后输出两个值，然后再来argmax，若第一个值即label[0]更大，则认为属于0类即negative。<br>我刚开始confused了一会儿，原因在于没理解到，这种输出值取argmax得到的索引值是与标签类别对应的</em>。</p>
+<p>下面使用训练好的模型对两个简单句子的情感进行分类。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">predict_sentiment(net, vocab, [<span class="string">'this'</span>, <span class="string">'movie'</span>, <span class="string">'is'</span>, <span class="string">'so'</span>, <span class="string">'great'</span>]) <span class="comment"># positive</span></span><br><span class="line">predict_sentiment(net, vocab, [<span class="string">'this'</span>, <span class="string">'movie'</span>, <span class="string">'is'</span>, <span class="string">'so'</span>, <span class="string">'bad'</span>]) <span class="comment"># negative</span></span><br></pre></td></tr></table></figure>
+<br>
+<br>
+
+<h1 id="CNN实现"><a href="#CNN实现" class="headerlink" title="CNN实现"></a>CNN实现</h1><p>我们也可以<strong>将文本当作一维图像，从而可以用一维卷积神经网络来捕捉临近词之间的关联</strong>。本节将介绍将卷积神经网络应用到文本分析的开创性工作之一：textCNN [1]。<br>[1] Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"><span class="keyword">import</span> torchtext.vocab <span class="keyword">as</span> Vocab</span><br><span class="line"><span class="keyword">import</span> torch.utils.data <span class="keyword">as</span> Data</span><br><span class="line"><span class="keyword">import</span>  torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line">sys.path.append(<span class="string">".."</span>) </span><br><span class="line"><span class="keyword">import</span> d2lzh_pytorch <span class="keyword">as</span> d2l</span><br><span class="line"></span><br><span class="line">os.environ[<span class="string">"CUDA_VISIBLE_DEVICES"</span>] = <span class="string">"0"</span></span><br><span class="line">device = torch.device(<span class="string">'cuda'</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">'cpu'</span>)</span><br><span class="line"></span><br><span class="line">DATA_ROOT = <span class="string">"/S1/CSCL/tangss/Datasets"</span></span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="卷积层"><a href="#卷积层" class="headerlink" title="卷积层"></a>卷积层</h2><p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-17%20%E4%B8%8B%E5%8D%889.42.24.png" alt="alt"><br>很简单，也是输入取核大小的滑动窗口，里面的数与核对应相乘。<br>下面我们将<strong>一维互相关运算</strong>实现在corr1d函数里。它接受输入数组X和核数组K，并输出数组Y。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">corr1d</span><span class="params">(X, K)</span>:</span></span><br><span class="line">    w = K.shape[<span class="number">0</span>]</span><br><span class="line">    Y = torch.zeros((X.shape[<span class="number">0</span>] - w +<span class="number">1</span>))</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(Y.shape[<span class="number">0</span>]):</span><br><span class="line">        Y[i] = (X[i:i+w]*K).sum() <span class="comment">#i+w不用-1因为区间前闭后开</span></span><br><span class="line">    <span class="keyword">return</span> Y</span><br></pre></td></tr></table></figure>
+
+<p>那对于<strong>多输入通道的一维互相关运算</strong>，其实就是对应通道做运算，结果相加即可。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-17%20%E4%B8%8B%E5%8D%889.46.21.png" alt="alt"><br>实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">corr1d_multi_in</span><span class="params">(X, K)</span>:</span></span><br><span class="line">    <span class="comment"># 多输入通道的一维互相关运算</span></span><br><span class="line">    <span class="comment"># 首先沿着X和K的第0维（通道维）遍历并计算一维互相关结果。然后将所有结果堆叠起来沿第0维累加</span></span><br><span class="line">    <span class="keyword">return</span> torch.stack([corr1d(x, k) <span class="keyword">for</span> x, k <span class="keyword">in</span> zip(X,K)]).sum(dim=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>学习一下这个代码的厉害之处，一句话搞定功能：</p>
+<blockquote>
+<p>1.<strong>torch.stack</strong>：<strong>让几个张量在通道维上连接</strong>。注意传入对象是一个张量数组，用中括号括起来。<br>2.<strong>zip(X, K)</strong>：对于这种需要X和K在“通道上对应”的处理，用zip，完美实现。<br>3.<strong>sum(dim=0)</strong>：最后在通道维即第0维上作求和。</p>
+</blockquote>
+<Br>
+
+<h2 id="池化层"><a href="#池化层" class="headerlink" title="池化层"></a>池化层</h2><p>textCNN中使用的时序最大池化（max-over-time pooling）层实际上对应一维全局最大池化层：假设输入包含多个通道，各通道由不同时间步上的数值组成，<strong>各通道的输出即该通道所有时间步中最大的数值</strong>。因此，时序最大池化层的输入在各个通道上的时间步数可以不同。</p>
+<p>所以，为了提升计算性能，我们常常将不同长度的时序样本组成一个小批量，并通过<strong>在较短序列后附加特殊字符（如0）令批量中各时序样本长度相同</strong>。这些人为添加的特殊字符当然是无意义的。但是由于时序最大池化的主要目的是抓取时序中最重要的特征，它通常能使模型不受人为添加字符的影响。</p>
+<p>由于pytorch没有自带的全局的最大池化层，所以我们通过普通的最大池化层对各通道依次处理，实现全局池化。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">GlobalMaxPool1d</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        super(GlobalMaxPool1d, self).__init__()</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, x)</span>:</span></span><br><span class="line">         <span class="comment"># x shape: (batch_size, channel, seq_len)</span></span><br><span class="line">         <span class="comment"># return shape: (batch_size, channel, 1)</span></span><br><span class="line">        <span class="keyword">return</span> F.max_pool1d(x, kernel_size=x.shape[<span class="number">2</span>]) <span class="comment">#kernel维度为一个通道的维度</span></span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="读数据"><a href="#读数据" class="headerlink" title="读数据"></a>读数据</h2><p>我们依然使用和上一节中相同的IMDb数据集做情感分析。以下读取和预处理数据集的步骤与上一节中的相同。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">batch_size = <span class="number">64</span></span><br><span class="line">train_data = d2l.read_imdb(<span class="string">'train'</span>, data_root=os.path.join(DATA_ROOT, <span class="string">"aclImdb"</span>))</span><br><span class="line">test_data = d2l.read_imdb(<span class="string">'test'</span>, data_root=os.path.join(DATA_ROOT, <span class="string">"aclImdb"</span>))</span><br><span class="line">vocab = d2l.get_vocab_imdb(train_data)</span><br><span class="line">train_set = Data.TensorDataset(*d2l.preprocess_imdb(train_data, vocab))</span><br><span class="line">test_set = Data.TensorDataset(*d2l.preprocess_imdb(test_data, vocab))</span><br><span class="line">train_iter = Data.DataLoader(train_set, batch_size, shuffle=<span class="literal">True</span>)</span><br><span class="line">test_iter = Data.DataLoader(test_set, batch_size)</span><br></pre></td></tr></table></figure>
+<Br>
+
+<h2 id="模型"><a href="#模型" class="headerlink" title="模型"></a>模型</h2><p>textCNN模型主要使用了一维卷积层和时序最大池化层。假设输入的文本序列由n个词组成，每个词用d维的词向量表示。那么输入样本的宽为n，高为1，输入通道数为d。textCNN的计算主要分为以下几步。</p>
+<p>1）定义多个一维卷积核，并使用这些卷积核对输入分别做卷积计算。宽度不同的卷积核可能会捕捉到不同个数的相邻词的相关性。<br>2）对输出的所有通道分别做时序最大池化（每个通道变成一个数），再将这些通道的池化输出值连结为向量。<br>3）通过全连接层将连结后的向量变换为有关各类别的输出。这一步可以使用丢弃层应对过拟合。</p>
+<p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-19%20%E4%B8%8A%E5%8D%8810.53.43.png" alt="alt"><br>（注意图中流程顺序是从下往上）</p>
+<p>下面我们来实现textCNN模型。与上一节相比，除了用一维卷积层替换循环神经网络外，<em>这里我们还使用了两个嵌入层，一个的权重固定，另一个则参与训练</em>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TextCNN</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, vocab, embed_size, kernel_sizes, num_channels)</span>:</span></span><br><span class="line">        super(TextCNN, self).__init__()</span><br><span class="line">        self.embedding = nn.Embedding(len(vocab), embed_size)</span><br><span class="line">        <span class="comment">#不参与训练的嵌入层</span></span><br><span class="line">        self.constant_embedding = nn.Embedding(len(vocab), embed_size)</span><br><span class="line">        self.dropout = nn.Dropout(<span class="number">0.5</span>)</span><br><span class="line">        self.decoder = nn.Linear(sum(num_channels), <span class="number">2</span>)</span><br><span class="line">        <span class="comment">#时序最大池化层没有权重，所以可以共用一个实例</span></span><br><span class="line">        self.pool = GlobalMaxPool1d()</span><br><span class="line">         <span class="comment"># 创建多个一维卷积层 用ModuleList然后再append</span></span><br><span class="line">        self.convs = nn.ModuleList() </span><br><span class="line">        <span class="keyword">for</span> c, k <span class="keyword">in</span> zip(num_channels, kernel_sizes):</span><br><span class="line">            <span class="comment">#注意有两个嵌入层</span></span><br><span class="line">            self.convs.append(nn.Conv1d(in_channels = <span class="number">2</span>*embed_size,</span><br><span class="line">                            out_channels = c,</span><br><span class="line">                            kernel_size = k))</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, intputs)</span>:</span></span><br><span class="line">        <span class="comment">#将两个形状是(批量大小, 词数, 词向量维度)的嵌入层的输出按词向量连结</span></span><br><span class="line">        embeddings = torch.cat((</span><br><span class="line">                    self.embedding(inputs),</span><br><span class="line">                    self.constant_embedding(inputs)), dim=<span class="number">2</span>) <span class="comment"># (batch, seq_len, 2*embed_size)</span></span><br><span class="line">        <span class="comment">#对于一个样本，维度为（词数，词向量），即一行是一个词，</span></span><br><span class="line">        <span class="comment">#对于卷积运算，应该让一列是一个词，一行是一个样本，这样窗口才能横着取</span></span><br><span class="line">        embeddings = embeddings.permute(<span class="number">0</span>,<span class="number">2</span>,<span class="number">1</span>)</span><br><span class="line">        <span class="comment"># 对于每个一维卷积层，在时序最大池化后会得到一个形状为(批量大小, 通道数, 1)的</span></span><br><span class="line">        <span class="comment"># Tensor。使用squeeze函数去掉最后一维，然后在通道维上连结</span></span><br><span class="line">         encoding = torch.cat([self.pool(F.relu(conv(embeddings))).squeeze(<span class="number">-1</span>) <span class="keyword">for</span> conv <span class="keyword">in</span> self.convs], dim=<span class="number">1</span>)</span><br><span class="line">         <span class="comment"># 应用dropout后使用全连接层输出</span></span><br><span class="line">         outputs = self.decoder(self.dropout(encoding))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> outputs</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>squeeze 函数</strong>：从数组的形状中删除单维度条目，即把shape中为1的维度去掉<br>numpy.squeeze(a,axis = None)<br>1）a表示输入的数组；<br> 2）axis用于指定需要删除的维度，但是指定的维度必须为单维度，否则将会报错；<br> 3）axis的取值可为None 或 int 或 tuple of ints, 可选。若axis为空，则删除所有单维度的条目；<br> 4）返回值：数组<br> 5）不会修改原数组，即只是创建副本</p>
+</blockquote>
+<p>创建一个TextCNN实例。它有3个卷积层，它们的核宽分别为3、4和5，输出通道数均为100。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">embed_size, kernel_sizes, nums_channels = <span class="number">100</span>, [<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>], [<span class="number">100</span>, <span class="number">100</span>, <span class="number">100</span>]</span><br><span class="line">net = TextCNN(vocab, embed_size, kernel_sizes, nums_channels)</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="词向量"><a href="#词向量" class="headerlink" title="词向量"></a>词向量</h2><p>同上一节一样，加载预训练的100维GloVe词向量，并分别初始化嵌入层embedding和constant_embedding，前者参与训练，而后者权重固定。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">glove_vocab = Vocab.GloVe(name=<span class="string">'6B'</span>, dim=<span class="number">100</span>,</span><br><span class="line">                        cache=os.path.join(DATA_ROOT, <span class="string">"glove"</span>))</span><br><span class="line">net.embedding.weight.data.copy_(</span><br><span class="line">    d2l.load_pretrained_embedding(vocab.itos, glove_vocab))</span><br><span class="line">net.constant_embedding.weight.data.copy_(</span><br><span class="line">    d2l.load_pretrained_embedding(vocab.itos, glove_vocab))</span><br><span class="line"></span><br><span class="line"><span class="comment">#这里对实例化后的模型的参数进行梯度固定</span></span><br><span class="line">net.constant_embedding.weight.requires_grad = <span class="literal">False</span></span><br></pre></td></tr></table></figure>
+<Br>
+
+<h2 id="训练评价-1"><a href="#训练评价-1" class="headerlink" title="训练评价"></a>训练评价</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">lr, num_epochs = <span class="number">0.001</span>, <span class="number">5</span></span><br><span class="line">optimizer = torch.optim.Adam(filter(<span class="keyword">lambda</span> p: p.requires_grad, net.parameters()), lr=lr)</span><br><span class="line">loss = nn.CrossEntropyLoss()</span><br><span class="line">d2l.train(train_iter, test_iter, net, loss, optimizer, device, num_epochs)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">training on  cuda</span><br><span class="line">epoch <span class="number">1</span>, loss <span class="number">0.4858</span>, train acc <span class="number">0.758</span>, test acc <span class="number">0.832</span>, time <span class="number">42.8</span> sec</span><br><span class="line">epoch <span class="number">2</span>, loss <span class="number">0.1598</span>, train acc <span class="number">0.863</span>, test acc <span class="number">0.868</span>, time <span class="number">42.3</span> sec</span><br><span class="line">epoch <span class="number">3</span>, loss <span class="number">0.0694</span>, train acc <span class="number">0.917</span>, test acc <span class="number">0.876</span>, time <span class="number">42.3</span> sec</span><br><span class="line">epoch <span class="number">4</span>, loss <span class="number">0.0301</span>, train acc <span class="number">0.956</span>, test acc <span class="number">0.871</span>, time <span class="number">42.4</span> sec</span><br><span class="line">epoch <span class="number">5</span>, loss <span class="number">0.0131</span>, train acc <span class="number">0.979</span>, test acc <span class="number">0.865</span>, time <span class="number">42.3</span> sec</span><br></pre></td></tr></table></figure>
+<p>下面，我们使用训练好的模型对两个简单句子的情感进行分类。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">d2l.predict_sentiment(net, vocab, [<span class="string">'this'</span>, <span class="string">'movie'</span>, <span class="string">'is'</span>, <span class="string">'so'</span>, <span class="string">'great'</span>]) <span class="comment"># positive</span></span><br><span class="line"></span><br><span class="line">d2l.predict_sentiment(net, vocab, [<span class="string">'this'</span>, <span class="string">'movie'</span>, <span class="string">'is'</span>, <span class="string">'so'</span>, <span class="string">'bad'</span>]) <span class="comment"># negative</span></span><br></pre></td></tr></table></figure>
+
+<Br>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>1）可以使用一维卷积来表征时序数据。<br>2）多输入通道的一维互相关运算可以看作单输入通道的二维互相关运算。（想象是以通道维的向量拼成一个矩形即二维）<br>3）时序最大池化层的输入在各个通道上的时间步数可以不同。<br>4）textCNN主要使用了一维卷积层和时序最大池化层。</p>
+<p>参考文献<br>[1] Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/19/%E6%96%87%E6%9C%AC%E6%83%85%E6%84%9F%E5%88%86%E7%B1%BB%E5%AE%9E%E8%B7%B5/" data-id="ck6ss30af0000yp6cci4i60a9"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8A%A8%E6%89%8B%E5%AD%A6%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">动手学深度学习</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/02/17/Glove%E5%8F%8A%E8%AF%8D%E5%90%91%E9%87%8F%E5%BA%94%E7%94%A8/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">Glove及词向量应用</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
