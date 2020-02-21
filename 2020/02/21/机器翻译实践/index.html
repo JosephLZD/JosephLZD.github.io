@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    机器翻译实践 |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-机器翻译实践" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      机器翻译实践
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/02/21/%E6%9C%BA%E5%99%A8%E7%BF%BB%E8%AF%91%E5%AE%9E%E8%B7%B5/" class="article-date">
+  <time datetime="2020-02-21T10:15:08.000Z" itemprop="datePublished">2020-02-21</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>《动手学深度学习pytorch版》“自然语言处理”学习笔记part 3。包括编码器解码器seq2seq、束搜索、注意力attention机制的概念介绍，以及“机器翻译”实现代码。</p>
+<a id="more"></a>
+<h1 id="seq2seq"><a href="#seq2seq" class="headerlink" title="seq2seq"></a>seq2seq</h1><p>之前我们在表征的时候，若对于不定长样本，都会用填充项来补齐。但是在自然语言处理的很多应用中，输入和输出都可以是不定长序列。</p>
+<p>当输入和输出都是<strong>不定长序列</strong>时，我们可以使用编码器—解码器（encoder-decoder）[1] 或者seq2seq模型 [2]。这两个模型本质上都用到了<strong>两个循环神经网络</strong>，分别叫做编码器和解码器。编码器用来分析输入序列，解码器用来生成输出序列。</p>
+<h2 id="编码器"><a href="#编码器" class="headerlink" title="编码器"></a>编码器</h2><p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-19%20%E4%B8%8B%E5%8D%882.00.02.png" alt="alt"></p>
+<h2 id="解码器"><a href="#解码器" class="headerlink" title="解码器"></a>解码器</h2><p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-19%20%E4%B8%8B%E5%8D%882.00.24.png" alt="alt"><br><em>粗略理解，解码器与其他循环神经网络的不同在于，用到了编码器得到的背景向量c。</em></p>
+<h2 id="训练模型"><a href="#训练模型" class="headerlink" title="训练模型"></a>训练模型</h2><p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-19%20%E4%B8%8B%E5%8D%882.28.04.png" alt="alt"><br><br></p>
+<h1 id="束搜索"><a href="#束搜索" class="headerlink" title="束搜索"></a>束搜索</h1><p>首先说“贪婪搜索”，我们知道，对于一个时序序列，每一个时间步的输出可以看做到目前为止的条件概率值，而贪婪就是说每一个时间步选当前条件概率值最大的那个作为预测标签。</p>
+<p>但是贪婪搜索不一定得到的是最优解，因为如果我们在该时间步取次优解，有可能反而能够让之后的时间步取得的条件概率值更大，从而使整个输出序列的概率值更大。</p>
+<p>但是穷举的复杂度又太高了，所以引入了“束搜索”（beam search）。</p>
+<p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-19%20%E4%B8%8B%E5%8D%882.35.00.png" alt="alt"><br>上图即一个束搜索（束宽=2）的例子。</p>
+<p>对于损失函数，还考虑到要约束序列不能过长，否则概率乘积项过多。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-19%20%E4%B8%8B%E5%8D%882.35.34.png" alt="alt"></p>
+<br>
+
+<h1 id="Attention"><a href="#Attention" class="headerlink" title="Attention"></a>Attention</h1><p>在本文介绍（编码器—解码器（seq2seq））里，解码器在各个时间步依赖<strong>相同的背景变量c</strong>来获取输入序列信息。当编码器为循环神经网络时，背景变量来自它最终时间步的隐藏状态。</p>
+<p>现在，让我们再次思考那一节提到的翻译例子：输入为英语序列“They”“are”“watching”“.”，输出为法语序列“Ils”“regardent”“.”。不难想到，解码器在生成输出序列中的每一个词时可能只需利用输入序列某一部分的信息。例如，在输出序列的时间步1，解码器可以主要依赖“They”“are”的信息来生成“Ils”，在时间步2则主要使用来自“watching”的编码信息生成“regardent”，最后在时间步3则直接映射句号“.”。这看上去就像是在<em>解码器的每一时间步对输入序列中不同时间步的表征或编码信息分配不同的注意力</em>一样。这也是注意力机制的由来。</p>
+<p>仍然以循环神经网络为例，<strong>注意力机制通过对编码器所有时间步的隐藏状态做加权平均来得到背景变量</strong>。解码器在每一时间步调整这些权重，即注意力权重，从而能够在不同时间步分别关注输入序列中的不同部分并编码进相应时间步的背景变量。本节我们将讨论注意力机制是怎么工作的。</p>
+<p>因此，解码器在每一个时间步的异常状态st的计算中，用到上一步的输出yt-1，用到上一步的隐藏状态st-1，也用到背景变量c，但这里的c在每一个时间步里是不一样的。</p>
+<p>这里的关键是如何计算背景变量ct′，和如何利用它来更新隐藏状态st′。下面将分别描述这两个关键点。</p>
+<h2 id="背景变量"><a href="#背景变量" class="headerlink" title="背景变量"></a>背景变量</h2><p>我们刚刚说，对于解码器的每个时间步，提供的背景向量Ct是编码器中所有时间步的隐藏状态的加权求和，<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-19%20%E4%B8%8B%E5%8D%884.23.14.png" alt="alt"><br>（其中t‘是指解码器的当前时间步t’，t是针对编码器）</p>
+<p>那么，这个“权值”a便是关键问题。</p>
+<p>我们想，既然是希望“权值”的意义表示“对于不同时间步的编码器隐藏状态，要有不同的偏重，即分配不同的注意力”，其实也就是一个概率问题，若概率均匀分配则同样看重，概率大一点表示更重视。</p>
+<p>所以，权重引入softmax运算。<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-19%20%E4%B8%8B%E5%8D%884.24.18.png" alt="alt"></p>
+<p>现在，我们需要定义如何计算上式中softmax运算的输入et′t。我们认为与之相关的是 <code>解码器在上一步的隐藏状态st-1</code> 和 <code>编码器在这一步的隐藏状态ht</code>。</p>
+<p>当然，如果st-1和ht的长度相同，一个简单的选择是计算内积，而最早提出注意力机制的论文则将输入连结后通过含单隐藏层的多层感知机变换（即线性变换+激活）</p>
+<h2 id="隐藏状态"><a href="#隐藏状态" class="headerlink" title="隐藏状态"></a>隐藏状态</h2><p>接下来描述第二个关键点，每个时间步有了不同的背景变量，那么具体来说，对于解码器，应该怎样更新隐藏状态呢？</p>
+<p>回想一下经典的RNN的前向传播，Ht的更新是输入xt和Ht-1的多层感知机变换，而解码器这里，并没有输入xt。所以，我们可以认为，它就得用上自己上一时间步的实际标签yt-1（这叫强制教学teacher forcing），以及上一步的隐藏状态st-1，还得用上当前时间步的背景向量ct。</p>
+<p>至于具体的前向传播设计，参照了GRU的设计，公式如下：<br><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-19%20%E4%B8%8B%E5%8D%884.39.41.png" alt="alt"></p>
+<Br>
+<br>
+
+<h1 id="机器翻译"><a href="#机器翻译" class="headerlink" title="机器翻译"></a>机器翻译</h1><p>机器翻译是指将一段文本从一种语言自动翻译到另一种语言。因为一段文本序列在不同语言中的长度不一定相同，所以我们使用机器翻译为例来介绍编码器—解码器和注意力机制的应用。</p>
+<h2 id="读数据"><a href="#读数据" class="headerlink" title="读数据"></a>读数据</h2><p>我们先定义一些特殊符号。其中“<pad>”（padding）符号用来添加在较短序列后，直到每个序列等长，而“<bos>”和“<eos>”符号分别表示序列的开始和结束。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> collections</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> io</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">import</span> torchtext.vocab <span class="keyword">as</span> Vocab</span><br><span class="line"><span class="keyword">import</span> torch.utils.data <span class="keyword">as</span> Data</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line">sys.path.append(<span class="string">".."</span>) </span><br><span class="line"><span class="keyword">import</span> d2lzh_pytorch <span class="keyword">as</span> d2l</span><br><span class="line"></span><br><span class="line">PAD, BOS, EOS = <span class="string">'&lt;pad&gt;'</span>, <span class="string">'&lt;bos&gt;'</span>, <span class="string">'&lt;eos&gt;'</span></span><br><span class="line">os.environ[<span class="string">"CUDA_VISIBLE_DEVICES"</span>] = <span class="string">"0"</span></span><br><span class="line">device = torch.device(<span class="string">'cuda'</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">'cpu'</span>)</span><br></pre></td></tr></table></figure>
+<p>接着定义两个辅助函数对后面读取的数据进行预处理。<br><strong>这里解释预处理以及涉及到的对整个流程的理解</strong>：<br>：<em>构建词典、填充句子至等长、通过词典来构建vocab从而自动实现词&lt;-&gt;索引的映射，然后把数据中的词都换成索引数值，相当于就是每个词的索引对应一个类，然后我们之后会把此都是索引数值的样本数据word embedding，即一个索引数值对应一个词向量。这样做的原因是为了输入网络而对样本表征。最后整个网络的输出结果会是每个样本对应一个vocab_size的向量，每个位置就是属于该类的概率值，用argmax找到该最大下标即预测属于的那一类，即看看对应的是哪个索引值。</em></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 将一个序列中所有的词记录在all_tokens中以便之后构造词典，然后在该序列后面添加PAD直到序列</span></span><br><span class="line"><span class="comment"># 长度变为max_seq_len，然后将序列保存在all_seqs中</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">process_one_seq</span><span class="params">(seq_token, all_tokens, all_seqs, max_seq_len)</span>:</span></span><br><span class="line">    all_tokens.extend(seq_tokens)</span><br><span class="line">    seq_tokens += [EOS] + [PAD] * (max_seq_len - len(seq_tokens) - <span class="number">1</span>) <span class="comment">#加上结尾标识EOS和填充项</span></span><br><span class="line">    all_seqs.append(seq_token)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用所有的词来构造词典。并将所有序列中的词变换为词索引后构造Tensor</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">build_data</span><span class="params">(all_tokens, all_seqs)</span>:</span></span><br><span class="line">    vocab = torchtext.Vocab.Vocab(collections.Counter(all_tokens), sepecials=[PAD, BOS, EOS])</span><br><span class="line">    indices = [[vocab.stoi[w] <span class="keyword">for</span> w <span class="keyword">in</span> seq] <span class="keyword">for</span> seq <span class="keyword">in</span> all_seqs]</span><br><span class="line">    <span class="keyword">return</span> vocab, torch.tensor(indices)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>list.append(object) 向列表中添加一个对象object<br>list.extend(sequence) 把一个序列seq的内容添加到列表中。<br>难怪我以前总是用append导致整出了我不想要的多维List….</p>
+</blockquote>
+<blockquote>
+<p>class torchtext.vocab.Vocab(<br>    counter, max_size=None, min_freq=1, specials=[‘<pad>‘],<br>    vectors=None, unk_init=None, vectors_cache=None, specials_first=True)<br>从函数实现中可知，Counter里传入了词典数据即可，无需另外传入词典数据</p>
+</blockquote>
+<p>这里要再思考一下，为什么我们要填充样本数据至等长？因为我们之后实现神经网络的时候需要传入样本输入长度作为参数，所以要等长。</p>
+<Br>
+
+<h2 id="编码器-1"><a href="#编码器-1" class="headerlink" title="编码器"></a>编码器</h2><p>在编码器中，我们将输入语言的词索引通过词嵌入层得到词的表征，然后输入到一个多层门控循环单元中。正如我们在（循环神经网络的简洁实现）中提到的，PyTorch的nn.GRU实例在前向计算后也会分别返回输出和最终时间步的多层隐藏状态。其中的输出指的是最后一层的隐藏层在各个时间步的隐藏状态，并不涉及输出层计算。注意力机制将这些输出作为键项和值项。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Encoder</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, vocab_size, embed_size, num_hiddens, num_layers, drop_prob=<span class="number">0</span>, **kwargs)</span>:</span></span><br><span class="line">    super(Encoder, self).__init__(**kwargs)</span><br><span class="line">    self.embedding = nn.Embedding(vocab_size, embed_size)</span><br><span class="line">    self.rnn = nn.GRU(embed_size, num_hiddens, num_layers, dropout=drop_prob)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, inputs, state)</span>:</span></span><br><span class="line">        <span class="comment"># 输入形状是(批量大小, 时间步数, embed_size)。将输出互换样本维和时间步维，这样每次传入rnn的就是一个时间步的batch了~</span></span><br><span class="line">        embedding = self.embedding(inputs.long()).permute(<span class="number">1</span>,<span class="number">0</span>,<span class="number">2</span>) <span class="comment"># (seq_len, batch, input_size)</span></span><br><span class="line">        <span class="keyword">return</span> self.rnn(embedding, state)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">begin_state</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span><span class="comment"># 隐藏态初始化为None</span></span><br></pre></td></tr></table></figure>
+<p><em>这里深入了一个理解：对于这种网络模型类的定义，<code>init</code>主要是构造函数，即把这些最开始的参数传进去，为的是把里面的网络层的参数（比如说维度设置、dropout系数<br>）这种超参数都设置好，即把网络层都给初始化好。<br>而模型类中的<code>forward</code>函数是应用于当实例化该网络模型类之后，传入符合维度设置的样本数据时我们该怎么去用这些定义好的网络层作前向传播。<br>之后实现的话，我们首先会实例化这个网络模型类，然后再向其传入我们的训练数据，引发前向传播，得到结果。比如RNN函数，我们需要传入的是此时间步input和上一步隐藏状态state</em>。</p>
+<p>比如，这里怎样用这个encoder呢？</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">encoder = Encoder(vocab_size=<span class="number">10</span>, embed_size=<span class="number">8</span>, num_hiddens=<span class="number">16</span>, num_layers=<span class="number">2</span>) <span class="comment">#实例化网络模型类</span></span><br><span class="line">output, state = encoder(torch.zeros((<span class="number">4</span>, <span class="number">7</span>)), encoder.begin_state()) <span class="comment">#传入样本数据 得到输出</span></span><br><span class="line">output.shape, state.shape <span class="comment"># GRU的state是h, 而LSTM的是一个元组(h, c)</span></span><br></pre></td></tr></table></figure>
+<Br>
+
+<h2 id="attention"><a href="#attention" class="headerlink" title="attention"></a>attention</h2><p>之前在概念上提到过，我们要实现注意力机制，其实就是要计算对解码器所要用到的背景向量c，具体就是对编码器的不同时间步的隐藏状态h赋予不同的权重，而关键就是权重怎么求？</p>
+<p><strong>加权求和所得的背景向量的具体求法就是，在所有时间步上连结以下二者：<br>1）解码器在上一时间步的隐藏状态。维度为（批量大小，隐藏单元个数）。注意这里需要将其在时间步维度上广播。<br>2）编码器所有时间步的隐藏状态。维度为（时间步，批量大小，隐藏单元个数）<br>连结好之后，拿去通过函数a的处理（可能是多层感知机处理），多层感知机输出的维度为（时间步，批量大小，1），也就是说，对于一个样本而言，每个时间步都有一个值，也就是与该时间步的隐藏状态一一对应了。但是别慌，这只是softmax运算的自变量值！所以我们还得用softmax运算来处理这些值，得到的结果才算是该时间步隐藏状态的权重，维度为（时间步，批量大小，1）。然后我们由此对隐藏状态向量加权，以时间步维求和，得到最终的背景向量，维度为（批量大小，隐藏状态神经元个数）。</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">attention_model</span><span class="params">(input_size, attention_size)</span>:</span></span><br><span class="line"><span class="string">'''</span></span><br><span class="line"><span class="string">    此函数是为了求背景向量，而对解码器上一步的隐藏状态和编码器所有的隐藏状态连结之后的向量进行多层感知机处理，得到softmax需要的自变量值。</span></span><br><span class="line"><span class="string">    input_size：连结好的向量的维度，这里作为输入维度</span></span><br><span class="line"><span class="string">    attention_size: 自定义的，因为中间想要加个激活，所以中间输出维度要自定义</span></span><br><span class="line"><span class="string">'''</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">attention_model</span><span class="params">(input_size, attention_size)</span>:</span></span><br><span class="line">    model = nn.Sequential(nn.Linear(input_size, attention_size, bias=<span class="literal">False</span>),</span><br><span class="line">                    nn.Tanh(),</span><br><span class="line">                    nn.Linear(attention_size, <span class="number">1</span>, bias=<span class="literal">False</span>)) <span class="comment">#注意输出的是1，即每个时间步得到一个值，作为softmax自变量值</span></span><br><span class="line">    <span class="keyword">return</span> model</span><br></pre></td></tr></table></figure>
+<p>接下来的函数实现：输入编码器所有时间步的隐藏状态、解码器上一步的隐藏状态、刚刚定义好的多层感知机model，得到其输出并进行softmax运算得到权重，将其加权按时间步求和。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">attention_forward</span><span class="params">(model, enc_states, dec_state)</span>:</span></span><br><span class="line"><span class="string">'''</span></span><br><span class="line"><span class="string">    enc_states: (时间步数, 批量大小, 隐藏单元个数)</span></span><br><span class="line"><span class="string">    dec_state: (批量大小, 隐藏单元个数)</span></span><br><span class="line"><span class="string">'''</span></span><br><span class="line">    <span class="comment"># 将解码器隐藏状态广播到和编码器隐藏状态形状相同后进行连结</span></span><br><span class="line">    dec_states = dec_state.unsqueezed(dim=<span class="number">0</span>).expand_as(enc_states)</span><br><span class="line">    enc_and_dec_states = torch.cat((enc_states, dec_states), dim=<span class="number">2</span>) <span class="comment">#所以model样本输入维度input_size= 2*num_hiddens</span></span><br><span class="line">    e = model(enc_and_dec_states)<span class="comment"># 输出形状为(时间步数, 批量大小, 1)</span></span><br><span class="line">    alpha = F.softmax(e, dim=<span class="number">0</span>) <span class="comment">#在时间步维度做softmax运算，alpha维度为（时间步，批量大小，1）</span></span><br><span class="line">    <span class="keyword">return</span> (alpha*enc_states).sum(dim=<span class="number">0</span>) <span class="comment">#返回背景变量c，维度为（批量大小，num_hiddens）</span></span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="解码器-1"><a href="#解码器-1" class="headerlink" title="解码器"></a>解码器</h2><p>接下来实现含attention机制的解码器。</p>
+<p><strong>步骤比较易懂，对于网络层定义方面，先是embedding层，然后是attention层用来计算背景向量，然后是GRU层用于解码器计算，最后一个全连接层。<br>GRU层的输入是（input,state)，input是上一时间步解码器的输出与背景向量的连结，state是上一步的隐藏状态。要注意的是，以单样本为例，上一时间步解码器的输出是vocab个索引值，所以要word embedding之后再与背景向量连结；另外，由于传入GRU的是单个时间步的批量数据，而我们连结后其实只是（批量大小，num_hiddens）维度的，所以要unsqueeze(0)来新建一个时间维，即满足数据格式后再传入RNN</strong>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Decoder</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, vocab_size, embed_size, num_hiddens, num_layers, attention_size, drop_prob=<span class="number">0</span>)</span>:</span></span><br><span class="line">        super(Decoder, self).__init__()</span><br><span class="line">        self.embedding = nn.Embedding(vocab_size, embed_size)</span><br><span class="line">        self.attention = attention_model(<span class="number">2</span>*num_hiddens, attention_size)</span><br><span class="line">        <span class="comment"># GRU的输入包含attention输出的背景向量c和实际输入, 所以尺寸是 num_hiddens+embed_size</span></span><br><span class="line">        self.rnn = nn.GRU(num_hiddens + embed_size, num_hiddens, num_layers, dropout=drop_prob)</span><br><span class="line">        self.out = nn.Linear(num_hiddens, vocab_size)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, cur_input, state, enc_states)</span>:</span></span><br><span class="line">    <span class="string">'''</span></span><br><span class="line"><span class="string">        cur_input:解码器上一步的输出</span></span><br><span class="line"><span class="string">        state：解码器上一步的隐藏状态(num_layers, batch, num_hiddens）</span></span><br><span class="line"><span class="string">        enc_states：编码器所有时间步的隐藏状态</span></span><br><span class="line"><span class="string">    '''</span></span><br><span class="line">    <span class="comment"># 使用注意力机制计算背景向量</span></span><br><span class="line">    c = attention_forward(self.attention, enc_states, state[<span class="number">-1</span>])</span><br><span class="line">    <span class="comment"># 将嵌入后的输入和背景向量在特征维连结, (批量大小, num_hiddens+embed_size)</span></span><br><span class="line">    input_and_c = torch.cat((self.embedding(cur_input), c), dim=<span class="number">1</span>)</span><br><span class="line">    <span class="comment"># 为输入和背景向量的连结增加时间步维，时间步个数为1</span></span><br><span class="line">    output, state = self.rnn(input_and_c.unsqueeze(<span class="number">0</span>), state)</span><br><span class="line">    <span class="comment"># 移除时间步维，输出形状为(批量大小, 输出词典大小)</span></span><br><span class="line">    output = self.out(output).squeeze(dim=<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">return</span> output, state</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">begin_state</span><span class="params">(self, enc_state)</span>:</span></span><br><span class="line">        <span class="comment"># 直接将编码器最终时间步的隐藏状态作为解码器的初始隐藏状态</span></span><br><span class="line">        <span class="keyword">return</span> enc_state</span><br></pre></td></tr></table></figure>
+<Br>
+
+<h2 id="训练模型-1"><a href="#训练模型-1" class="headerlink" title="训练模型"></a>训练模型</h2><p>我们先实现batch_loss函数计算一个小批量的损失。<br>解码器在最初时间步的输入是特殊字符BOS。之后，解码器在某时间步的输入为上一时间步的标签y，即<strong>强制教学</strong>。此外，同10.3节（word2vec的实现）中的实现一样，我们在这里也使用掩码变量避免填充项对损失函数计算的影响。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">batch_loss</span><span class="params">(encoder, decoder, X, Y, loss)</span>:</span></span><br><span class="line">    batch_size = X.shape[<span class="number">0</span>]</span><br><span class="line">    enc_state = encoder.begin_state() <span class="comment">#初始化编码器第一步要用的state</span></span><br><span class="line">    enc_outputs, enc_state = encoder(X, enc_state)</span><br><span class="line">    <span class="comment"># 初始化解码器第一步要用的state，是解码器的最后一步的state</span></span><br><span class="line">    dec_state = decoder.begin_state(enc_state)</span><br><span class="line">    <span class="comment"># 初始化解码器第一步要用的input，是BOS</span></span><br><span class="line">    dec_input = torch.tensor([out_vocab.stoi[BOS]] * batch_size)</span><br><span class="line">    <span class="comment"># 我们将使用掩码变量mask来忽略掉标签为填充项PAD的损失，即把</span></span><br><span class="line">    mask, num_not_pad_tokens = torch.ones(batch_size,), <span class="number">0</span> </span><br><span class="line">    l = torch.tensor([<span class="number">0.0</span>])</span><br><span class="line">    <span class="keyword">for</span> y <span class="keyword">in</span> Y.permute(<span class="number">1</span>,<span class="number">0</span>): <span class="comment"># Y shape: (batch_size, seq_len)，转置后再取则为是一个时间步</span></span><br><span class="line">        dec_output, dec_state = decoder(dec_input, dec_state, enc_outputs) <span class="comment">#传入以上初始化好的第一步用的BOS、None、编码器最后一步的输出</span></span><br><span class="line">        l = l + (mask * loss(dec_output, y)).sum() </span><br><span class="line">        num_not_pad_tokens += mask.sum().item()</span><br><span class="line">        <span class="comment"># EOS后面全是PAD. 下面一行保证一旦遇到EOS接下来的循环中mask就一直是0</span></span><br><span class="line">        dec_input = y <span class="comment">#强制教学 将这一步的标签给下一步输入</span></span><br><span class="line">        <span class="comment">#并且给下一步的输入提前准备好填充标识mask</span></span><br><span class="line">        mask = mask * (y!=out_vocab.stoi[EOS].float()</span><br><span class="line">        </span><br><span class="line">    <span class="keyword">return</span> l / num_not_pad_tokens</span><br></pre></td></tr></table></figure>
+<p>在训练函数中，我们需要同时迭代编码器和解码器的模型参数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train</span><span class="params">(encoder, decoder, dataset, lr, batch_size, num_epochs)</span>:</span></span><br><span class="line">    enc_optimizer = torch.optim.Adam(encoder.parameters(), lr=lr)</span><br><span class="line">    dec_optimizer = torch.optim.Adam(decoder.parameters(), lr=lr)</span><br><span class="line">    loss = nn.CrossEntropyLoss(reduction=<span class="string">'none'</span>)</span><br><span class="line">    data_iter = Data.DataLoader(dataset, batch_size, shuffle=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> range(num_epochs):</span><br><span class="line">        l_sum = <span class="number">0.0</span></span><br><span class="line">        <span class="keyword">for</span> X,Y <span class="keyword">in</span> data_iter:</span><br><span class="line">            enc_optimizer.zero_grad()</span><br><span class="line">            dec_optimizer.zero_grad()</span><br><span class="line">            l = batch_loss(encoder, decoder, X, Y, loss)</span><br><span class="line">            l.backward()</span><br><span class="line">            enc_optimizer.step()</span><br><span class="line">            dec_optimizer.step()</span><br><span class="line">            l_sum += l.item()</span><br><span class="line">        <span class="keyword">if</span> (epoch + <span class="number">1</span>) % <span class="number">10</span> == <span class="number">0</span>:</span><br><span class="line">            print(<span class="string">"epoch %d, loss %.3f"</span> % (epoch + <span class="number">1</span>, l_sum / len(data_iter)))</span><br></pre></td></tr></table></figure>
+<p>接下来，创建模型实例并设置超参数。然后，我们就可以训练模型了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">embed_size, num_hiddens, num_layers = <span class="number">64</span>, <span class="number">64</span>, <span class="number">2</span></span><br><span class="line">attention_size, drop_prob, lr, batch_size, num_epochs = <span class="number">10</span>, <span class="number">0.5</span>, <span class="number">0.01</span>, <span class="number">2</span>, <span class="number">50</span></span><br><span class="line">encoder = Encoder(len(in_vocab), embed_size, num_hiddens, num_layers,</span><br><span class="line">                  drop_prob)</span><br><span class="line">decoder = Decoder(len(out_vocab), embed_size, num_hiddens, num_layers,</span><br><span class="line">                  attention_size, drop_prob)</span><br><span class="line">train(encoder, decoder, dataset, lr, batch_size, num_epochs)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">epoch <span class="number">10</span>, loss <span class="number">0.441</span></span><br><span class="line">epoch <span class="number">20</span>, loss <span class="number">0.183</span></span><br><span class="line">epoch <span class="number">30</span>, loss <span class="number">0.100</span></span><br><span class="line">epoch <span class="number">40</span>, loss <span class="number">0.046</span></span><br><span class="line">epoch <span class="number">50</span>, loss <span class="number">0.025</span></span><br></pre></td></tr></table></figure>
+<Br>
+
+<h2 id="预测"><a href="#预测" class="headerlink" title="预测"></a>预测</h2><p>注意之前训练提到的“强制教学”是用到上一时间步的标签y作为解密器当前时间步的输入之一，但对于预测而言，我们不知真实标签，所以就用的是上一时间步解码器的输出预测而得的标签。</p>
+<p>这里我们实现最简单的贪婪搜索，即每个时间步取最大概率值作为预测标签。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">translate</span><span class="params">(encoder, decoder, input_seq, max_seq_len)</span>:</span></span><br><span class="line">    in_tokens = input_seq.split(<span class="string">' '</span>)</span><br><span class="line">    in_tokens += [EOS] + [PAD] * (max_seq_len - len(in_tokens) - <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">#编码器</span></span><br><span class="line">    enc_input = torch.tensor([[in_vocab.stoi[tk] <span class="keyword">for</span> tk <span class="keyword">in</span> in_tokens]]) <span class="comment">#1个batch</span></span><br><span class="line">    enc_state = encoder.begin_state()</span><br><span class="line">    enc_output, enc_state = encoder(enc_input, enc_state)</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#解码器</span></span><br><span class="line">    dec_input = torch.tensor([out_vocab.stoi[BOS])</span><br><span class="line">    dec_state = decoder.begin_state()</span><br><span class="line">    output_tokens = [] <span class="comment">#预测结果数组</span></span><br><span class="line">    <span class="keyword">for</span> _ <span class="keyword">in</span> range(max_seq_len):</span><br><span class="line">        <span class="comment">#传入每个字符即时间步进入解码器</span></span><br><span class="line">        <span class="comment">#传入参数：第一步的input是BOS,state是初始值，enc_output是编码器所有时间步的隐藏状态。</span></span><br><span class="line">        <span class="comment">#注意！编码器实质是GRU，输出的Output和state分别对应纵向和横向结果，都是隐藏状态，</span></span><br><span class="line">        <span class="comment">#这里需以时间步为单位所以用纵向即output</span></span><br><span class="line">        dec_output, dec_state = decoder(dec_input, dec_state, enc_output)</span><br><span class="line">        <span class="comment">#dec_output维度为（批量大小=1，vocab_size）</span></span><br><span class="line">        <span class="comment">#我们需要找到该时间步的预测类别</span></span><br><span class="line">        pred = dec_output.argmax(dim=<span class="number">1</span>) s</span><br><span class="line">        pred_token = out_vocab.itos[int(pred.item())]</span><br><span class="line">        <span class="keyword">if</span> pred_token = EOS: <span class="comment">#该步输出EOS 表示结束</span></span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            output_tokens.append(pred_token)</span><br><span class="line">            dec_input = pred <span class="comment">#下一步解码器的输入为此步的标签</span></span><br><span class="line">            </span><br><span class="line">    <span class="keyword">return</span> output_tokens</span><br></pre></td></tr></table></figure>
+<p>简单测试一下模型。输入法语句子“ils regardent.”，翻译后的英语句子应该是“they are watching.”。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">input_seq = <span class="string">'ils regardent .'</span></span><br><span class="line">translate(encoder, decoder, input_seq, max_seq_len)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[<span class="string">'they'</span>, <span class="string">'are'</span>, <span class="string">'watching'</span>, <span class="string">'.'</span>]</span><br></pre></td></tr></table></figure>
+<br>
+
+<h2 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h2><p><strong>评价机器翻译结果通常用“BLEU”方法。</strong></p>
+<p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202020-02-21%20%E4%B8%8B%E5%8D%886.06.59.png" alt="alt"></p>
+<p>下面来实现BLEU的计算。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">bleu</span><span class="params">(pred_tokens, label_tokens, k)</span>:</span></span><br><span class="line">    len_pred, len_label = len(pred_tokens), len(label_tokens)</span><br><span class="line">    score = math.exp(min(<span class="number">0</span>, <span class="number">1</span> - len_label / len_pred))</span><br><span class="line">    <span class="keyword">for</span> n <span class="keyword">in</span> range(<span class="number">1</span>, k + <span class="number">1</span>):</span><br><span class="line">           <span class="comment">#匹配上的子序列个数；用于进行匹配操作的dict</span></span><br><span class="line">        num_matches, label_subs = <span class="number">0</span>, collections.defaultdict(int)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(len_label - n + <span class="number">1</span>):</span><br><span class="line">            <span class="comment">#真实标签集按子序列长度依次存入dict</span></span><br><span class="line">            label_subs[<span class="string">''</span>.join(label_tokens[i: i + n])] += <span class="number">1</span></span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(len_pred - n + <span class="number">1</span>):</span><br><span class="line">            <span class="comment">#预测结果集按子序列长度依次与dict元素对比匹配。</span></span><br><span class="line">            <span class="comment">#匹配成功后一定要删除dict中的元素，避免出现之后有相同元素的子序列而与其错误匹配</span></span><br><span class="line">            <span class="keyword">if</span> label_subs[<span class="string">''</span>.join(pred_tokens[i: i + n])] &gt; <span class="number">0</span>:</span><br><span class="line">                num_matches += <span class="number">1</span></span><br><span class="line">                label_subs[<span class="string">''</span>.join(pred_tokens[i: i + n])] -= <span class="number">1</span></span><br><span class="line">        score *= math.pow(num_matches / (len_pred - n + <span class="number">1</span>), math.pow(<span class="number">0.5</span>, n))</span><br><span class="line">    <span class="keyword">return</span> score</span><br></pre></td></tr></table></figure>
+<p>接下来，定义一个辅助打印函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">score</span><span class="params">(input_seq, label_seq, k)</span>:</span></span><br><span class="line">    pred_tokens = translate(encoder, decoder, input_seq, max_seq_len)</span><br><span class="line">    label_tokens = label_seq.split(<span class="string">' '</span>)</span><br><span class="line">    print(<span class="string">'bleu %.3f, predict: %s'</span> % (bleu(pred_tokens, label_tokens, k),</span><br><span class="line">                                      <span class="string">' '</span>.join(pred_tokens)))</span><br></pre></td></tr></table></figure>
+<p>预测正确则分数为1。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">score(<span class="string">'ils regardent .'</span>, <span class="string">'they are watching .'</span>, k=<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bleu <span class="number">1.000</span>, predict: they are watching .</span><br></pre></td></tr></table></figure>
+<p>测试一个不在训练集中的样本。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">score(<span class="string">'ils sont canadienne .'</span>, <span class="string">'they are canadian .'</span>, k=<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bleu <span class="number">0.658</span>, predict: they are russian .</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/02/21/%E6%9C%BA%E5%99%A8%E7%BF%BB%E8%AF%91%E5%AE%9E%E8%B7%B5/" data-id="ck6w4ij8k0000006c4j7t8hhn"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8A%A8%E6%89%8B%E5%AD%A6%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">动手学深度学习</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/02/19/%E6%96%87%E6%9C%AC%E6%83%85%E6%84%9F%E5%88%86%E7%B1%BB%E5%AE%9E%E8%B7%B5/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">文本情感分类实践</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
