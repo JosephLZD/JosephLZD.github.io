@@ -170,6 +170,7 @@
       
         <p>pythonocc项目用到了Docker，涉及生产环境部署等操作。<br>这是我第一次开发真正需要上线的东西，和学校知识脱节，所以需要做大量知识储备。</p>
 <!--main-->
+
 <p>1.大型项目需要：数据库、高速缓存、后端和前端项目。集群化的部署方案是必然（保证冗余节点存在，稳定性强）。<br>  此项目搭建：5节点的mysql集群，6节点的redis节点，3节点的Tomcat集群和Nginx集群。<br>  做负载均衡，保证负载均衡节点的高可用，实现双机热备。<br>  达到高性能、高负载、高可用。<br>2. <strong>为什么用Docker？“隔离性”的问题</strong>。创建很多虚拟的空间，在其中部署程序，程序之间完全隔离。那么如果程序A宕机，不会对其他程序造成影响。<br>3. 每个MySQL都要部署到独立的docker容器里，分散mysql处理数据的请求，由HA来做负载均衡。如此一来，每个MySQL节点的负载会较低。<br>4. 可以试用XShell来连接远程虚拟机，这里我就在本地macOS做，所以不需要。<br>5. “单点登录”：一直保持微服务的登录状态。但Session无法跨项目。而JWT则是把认证与授权令牌信息保存在浏览器（客户端）上。对于微服务架构特别重要。</p>
 <h1 id="Docker"><a href="#Docker" class="headerlink" title="Docker"></a>Docker</h1><p><strong>docker是轻量级的虚拟机</strong>，而VM是重量级的虚拟机。</p>
 <ul>
@@ -243,6 +244,7 @@
       
         <p>采用Flask框架实现一个订餐小程序。</p>
 <!--main-->
+
 <h1 id="Flask-mvc框架"><a href="#Flask-mvc框架" class="headerlink" title="Flask mvc框架"></a>Flask mvc框架</h1><p><strong>什么是MVC框架？</strong></p>
 <blockquote>
 <p>Model-View-Controller（模型-视图-控制器）<br>MVC开始是存在于桌面程序中的，M是指业务模型，V是指用户界面，C则是控制器，使用MVC的目的是将M和V的实现代码分离，从而使同一个程序可以使用不同的表现形式。比如一批统计数据可以分别用柱状图、饼图来表示。C存在的目的则是确保M和V的同步，一旦M改变，V应该同步更新。</p>
