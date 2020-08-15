@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    flask小程序项目笔记 |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-flask小程序项目笔记" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      flask小程序项目笔记
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/08/15/flask%E5%B0%8F%E7%A8%8B%E5%BA%8F%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" class="article-date">
+  <time datetime="2020-08-15T15:37:03.000Z" itemprop="datePublished">2020-08-15</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>采用Flask框架实现一个订餐小程序。</p>
+<!--main-->
+<h1 id="Flask-mvc框架"><a href="#Flask-mvc框架" class="headerlink" title="Flask mvc框架"></a>Flask mvc框架</h1><p><strong>什么是MVC框架？</strong></p>
+<blockquote>
+<p>Model-View-Controller（模型-视图-控制器）<br>MVC开始是存在于桌面程序中的，M是指业务模型，V是指用户界面，C则是控制器，使用MVC的目的是将M和V的实现代码分离，从而使同一个程序可以使用不同的表现形式。比如一批统计数据可以分别用柱状图、饼图来表示。C存在的目的则是确保M和V的同步，一旦M改变，V应该同步更新。</p>
+</blockquote>
+<p><img src="https://imgvideoforblog.oss-cn-shanghai.aliyuncs.com/IMG_E9513BD93797-1.jpeg" alt="alt"></p>
+<p>其中用到的新知识：<br><strong>1.flask_script</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from flask_script <span class="keyword">import</span> Server</span><br></pre></td></tr></table></figure>
+
+<p>首先：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">manager = Manager( app ) #采用flask_script的Manager来包装app，从而可以去manager.py中自定义命令</span><br></pre></td></tr></table></figure>
+
+<p>其次在manager.py中，通过add_command函数自定义运行命令：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">manager.add_command( <span class="string">"runserver"</span>, Server( host=<span class="string">'0.0.0.0'</span>,port=app.config[<span class="string">'SERVER_PORT'</span>],use_debugger = True ,use_reloader = True) )</span><br></pre></td></tr></table></figure>
+
+<p>那么在运行时只需输入runserver，则相当于自动设置好了参数。<br><Br><br><strong>2. 蓝图路由规划</strong><br>在web-controllers文件夹中新建index.py，其中采用了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">route_index = Blueprint( <span class="string">'index_page'</span>,__name__ )</span><br></pre></td></tr></table></figure>
+
+<p>其实这个<strong>name</strong>就是文件中的index函数啦，这里被导入时，<strong>name</strong>即模块名。这里有讲究：</p>
+<blockquote>
+<ol>
+<li>如果模块是被导入，<strong>name</strong>的值为模块名字</li>
+<li>如果模块是被直接执行，<strong>name</strong>的值为’<strong>main</strong>’</li>
+</ol>
+</blockquote>
+<p>最后，在<a href="http://www.py中注册蓝图，即注册主页的分页前缀为&#39;/&#39;" target="_blank" rel="noopener">www.py中注册蓝图，即注册主页的分页前缀为&#39;/&#39;</a></p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">from web.controllers.index <span class="keyword">import</span> route_index</span><br><span class="line">app.register_blueprint( route_index,url_prefix = "/" ) #注册蓝图，即添加分页，而主页的所有分页的前缀都是/</span><br></pre></td></tr></table></figure>
+
+<p><strong>3.关于Flask框架的小结</strong></p>
+<ul>
+<li>蓝图路由规划 </li>
+<li>链接管理器和版本管理（common-libs-UrlManager.py）</li>
+<li>错误处理器（@app.errorhandler(404)，获取不同的异常返回相应报错页面） 日志系统（app.logger.info app.logger.error app.logger.debug），且可以在运行时开启debug=True，从而进行调试模式，自动检测程序更新并重启运行，这个的话其实在我们完整源码的config文件中已写好。</li>
+<li>数据库 高可用的Flask MVC框架</li>
+</ul>
+<h1 id="管理员后台"><a href="#管理员后台" class="headerlink" title="管理员后台"></a>管理员后台</h1><p>见user.py<br>这里仍用了路由蓝图规划。<br>1、注意在app.py中，<strong>构造时重新传入文件夹路径</strong>。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">class Application( Flask ): #继承Flask类</span><br><span class="line">    <span class="function">def <span class="title">__init__</span><span class="params">(self,import_name , template_folder = None,root_path = None )</span>:</span></span><br><span class="line"><span class="function">        #这里要在构造时可以传入template_folder文件路径，则不是默认的主目录下的templates，而是/web/templates/"</span></span><br><span class="line"><span class="function">        <span class="title">super</span><span class="params">( Application,self )</span>.<span class="title">__init__</span><span class="params">( import_name ,template_folder = template_folder,root_path = root_path,static_folder = None)</span></span></span><br><span class="line"><span class="function">        self.config.<span class="title">from_pyfile</span><span class="params">( <span class="string">'config/base_setting.py'</span> )</span></span></span><br><span class="line"><span class="function">        <span class="keyword">if</span> "ops_config" in os.environ:</span></span><br><span class="line"><span class="function">            #self.config.from_pyfile：直接通过python文件中所写的参数来设置。</span></span><br><span class="line"><span class="function">            self.config.<span class="title">from_pyfile</span><span class="params">( <span class="string">'config/%s_setting.py'</span>%os.environ[<span class="string">'ops_config'</span>] )</span></span></span><br><span class="line"><span class="function">            #通过环境变量来取得采用的是base local还是production的配置文件。在运行前加上参数：ops_config</span>=local 如在命令行中即export ops_config=local</span><br><span class="line"></span><br><span class="line">        db.init_app( self )</span><br><span class="line">        </span><br><span class="line">app = Application( __name__ ,template_folder = os.getcwd() + "/web/templates/",root_path = os.getcwd() ) #这里重设文件夹路径</span><br></pre></td></tr></table></figure>
+
+<p>2、函数模板。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">app.add_template_global(UrlManager.buildStaticUrl, <span class="string">'buildStaticUrl'</span>)</span><br></pre></td></tr></table></figure>
+
+<p>由此调用某函数返回的值，作为templates中<em>所有HTML文件</em>中的全局变量名为”buildStaticUrl”的值。</p>
+<p>2、图片不显示？<br>在web/controllers中新建static.py，采用send_from_directory(路径，文件名）来返回得到图片，而这也是用路由蓝图规划来实现的。其中，路径用到的root_path也是在app构造时传入的参数，且注意构造时要将static_foder设为None，这样才能显示图片，否则又去默认的根目录下的static文件去找去了。</p>
+<p>3、templates/common/layout.html文件<br><strong>“统一布局”</strong>：不同网页其实都有固定不变的地方，那么这就是统一布局。之后写网页的HTML代码，只需要</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;% extends "common/layout_main.html" %&#125; #相当于先继承统一布局</span><br></pre></td></tr></table></figure>
+
+<p>然后再书写block content即可。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/08/15/flask%E5%B0%8F%E7%A8%8B%E5%BA%8F%E9%A1%B9%E7%9B%AE%E7%AC%94%E8%AE%B0/" data-id="ckdvu4b550001hf6ce3nu62py"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Flask/" rel="tag">Flask</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/2020/08/15/Docker%E5%89%8D%E5%90%8E%E7%AB%AF%E5%88%86%E7%A6%BB%E9%A1%B9%E7%9B%AE%E9%83%A8%E7%BD%B2/" class="article-nav-link">
+        <strong class="article-nav-caption">Newer posts</strong>
+        <div class="article-nav-title">
+          
+            Docker前后端分离项目部署
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2020/04/10/pythonocc%E5%85%A5%E9%97%A8/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">pythonocc入门</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>

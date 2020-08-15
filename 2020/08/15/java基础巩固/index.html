@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="Ain&#39;t no mountain high enough">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    java基础巩固 |
+    
+    Blog_JosephLZD</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+<main class="content">
+  <section class="outer">
+  
+
+<article id="post-java基础巩固" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      java基础巩固
+    </h1>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2020/08/15/java%E5%9F%BA%E7%A1%80%E5%B7%A9%E5%9B%BA/" class="article-date">
+  <time datetime="2020-08-15T15:47:32.000Z" itemprop="datePublished">2020-08-15</time>
+</a>
+        
+      </div>
+    
+
+    
+      
+    <div class="tocbot"></div>
+
+
+
+
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>b站视频java核心技术基础篇 学习笔记</p>
+<a id="more"></a>
+
+<h1 id="类基础知识"><a href="#类基础知识" class="headerlink" title="类基础知识"></a>类基础知识</h1><h2 id="main函数"><a href="#main函数" class="headerlink" title="main函数"></a>main函数</h2><ol>
+<li>PSVM：public static void main(String[] args)</li>
+<li>严格意义上说，main函数不属于这个类的所拥有的的函数，是“寄居”在一个class中。</li>
+<li>main函数也无法被其他方法/类所调用。</li>
+<li>main函数的形参可以传入.</li>
+<li>在一个java文件中，可以有多个class定义，但只能有一个public class</li>
+</ol>
+<h2 id="自定义函数"><a href="#自定义函数" class="headerlink" title="自定义函数"></a>自定义函数</h2><ol>
+<li>不能以返回类型来区分同名函数。若只有返回值不同，将报错。</li>
+<li>重载：函数名相同，形参列表一定不同。</li>
+</ol>
+<h2 id="对象"><a href="#对象" class="headerlink" title="对象"></a>对象</h2><ol>
+<li>对象赋值是Reference（指针）赋值；基本数据类型是值传递。</li>
+<li>关于函数的传值和传地址。如果是对象的话，肯定就是传地址。<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//例子：两个数的交换。只有传入对象，才能真正交换。否则只是在函数内生成值的副本，交换无效。</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">test</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> n = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">int</span> m = <span class="number">2</span>;</span><br><span class="line">        swap(n,m);</span><br><span class="line">        System.out.print(<span class="string">"n="</span>+n+<span class="string">"m="</span>+m);</span><br><span class="line"></span><br><span class="line">        MyNumber obj1 = <span class="keyword">new</span> MyNumber();</span><br><span class="line">        MyNumber obj2 = <span class="keyword">new</span> MyNumber();</span><br><span class="line">        obj1.num=<span class="number">1</span>;</span><br><span class="line">        obj2.num=<span class="number">2</span>;</span><br><span class="line">        swap(obj1,obj2);</span><br><span class="line">        System.out.print(<span class="string">"n="</span>+obj1.num+<span class="string">"m="</span>+obj2.num);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">swap</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">int</span> m)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> s=n;</span><br><span class="line">        n=m;</span><br><span class="line">        m=s;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">swap</span><span class="params">(MyNumber a, MyNumber b)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> s = a.num;</span><br><span class="line">        a.num = b.num;</span><br><span class="line">        b.num = s;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+输出结果：n=1m=2<br>n=2m=1</li>
+</ol>
+<h2 id="构造函数"><a href="#构造函数" class="headerlink" title="构造函数"></a>构造函数</h2><ol>
+<li>构造函数和类名是一样的。其次，构造函数是<em>没有返回值的，也不能写void</em>，否则只是普通函数。</li>
+<li>Java有构造函数，但没有析构函数。因为JVM有垃圾回收机制，不需要程序员操心析构函数。</li>
+<li>一个类可以有多个构造函数，只要形参列表不相同即可。</li>
+</ol>
+<h2 id="信息隐藏原则"><a href="#信息隐藏原则" class="headerlink" title="信息隐藏原则"></a>信息隐藏原则</h2><ol>
+<li>类的成员属性是private；类的方法是public，通过方法来修改成员属性的值。（打比方，朋友只能通过公开接口来修改和访问东西。）</li>
+<li>可以通过IDE自动generate getter and setter。</li>
+</ol>
+<h1 id="继承"><a href="#继承" class="headerlink" title="继承"></a>继承</h1><ol>
+<li>继承后，如果在构造函数第一句没有super()，则编译器会帮你加父类的无参构造函数super()。而自己写的话可以调用父类的有参构造函数。</li>
+<li>父类的private是不给继承的。</li>
+<li>单继承。</li>
+</ol>
+<h1 id="抽象类"><a href="#抽象类" class="headerlink" title="抽象类"></a>抽象类</h1><ol>
+<li>abstract。函数不给方法体，那么abstract函数所在的类也声明为abstract。当然，抽象类中是可以有具体方法的。</li>
+<li>抽象类也是类，一个类继承于抽象类，就不能继承于其他类。</li>
+<li>子类可以继承于抽象类，但是一定要实现父类们所有abstract的方法，若不能完全实现，则子类也是抽象类。</li>
+</ol>
+<h1 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h1><ol>
+<li>如果类的所有方法都没有实现，那么这个类就是接口interface。（抽象类可以有具体方法，而接口不能）</li>
+<li>类只可以extends一个类，但是可以implements多个接口。</li>
+<li>实现接口也是要把所有方法都实现，否则就是抽象类。</li>
+<li>extends必须写在implements前面。</li>
+</ol>
+<h1 id="多态"><a href="#多态" class="headerlink" title="多态"></a>多态</h1><h2 id="类转型"><a href="#类转型" class="headerlink" title="类转型"></a>类转型</h2><ol>
+<li>类型可以相互转换，但是只限于有继承关系的类。</li>
+<li>子类可以转换为父类，而父类不可转换为子类。因为子类可以从大变小向上转型（丢弃一些多余的）。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Human obj1 = <span class="keyword">new</span> Man(); <span class="comment">//ok man extends human。这里从子类转换为父类，可以的。</span></span><br><span class="line">Man obj2 = <span class="keyword">new</span> Human(); <span class="comment">//illegal</span></span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>父类转为子类只有一种情况例外，就是这个父类本身就是从子类转化而来的。</li>
+</ol>
+<h2 id="多态的作用"><a href="#多态的作用" class="headerlink" title="多态的作用"></a>多态的作用</h2><ol>
+<li>以统一的接口来操纵某一类中不同的对象的动态行为。<br>一定要注意，就算从子类转型为父类，但是指向的内存空间是不变的。所以，再次调用方法，仍是原来的子类类型中实现的具体方法。</li>
+<li>对象之间的解耦。（基于接口，利用转型和多态，不影响真正方法的调用，成功地将调用类和被调用类解耦(decoupling)。）<br>多态的一个典型使用方法，就是在函数形参中是统一的父类类型，但传入的实参可以是其不同的子类类型！</li>
+</ol>
+<h2 id="匿名类"><a href="#匿名类" class="headerlink" title="匿名类"></a>匿名类</h2><p>直接new接口，但要马上补全方法实现。<br>匿名类只能用一次。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">haveLunch(</span><br><span class="line">                <span class="keyword">new</span> Animal()</span><br><span class="line">                &#123; <span class="comment">//实现该类中的抽象方法</span></span><br><span class="line">                    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">eat</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                        System.out.println(<span class="string">"I can eat from an anonymous class"</span>);                        </span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">move</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                        System.out.println(<span class="string">"I can move from an anonymous class"</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                    </span><br><span class="line">                &#125;);</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="static"><a href="#static" class="headerlink" title="static"></a>static</h1><h2 id="static变量"><a href="#static变量" class="headerlink" title="static变量"></a>static变量</h2><ol>
+<li>静态类变量是依赖于类存在的，而不依赖于对象实例存在。所以在构造函数中，只能输出静态类变量，除非新建实例。</li>
+<li>所有的对象实例，其类变量也只是指向同一个内存空间。</li>
+</ol>
+<h2 id="static方法"><a href="#static方法" class="headerlink" title="static方法"></a>static方法</h2><ol>
+<li>可以通过类名直接引用。其中必须都是静态类变量。</li>
+<li>非静态方法可以调用静态方法，而静态方法不可调用非静态方法。</li>
+</ol>
+<h2 id="static块"><a href="#static块" class="headerlink" title="static块"></a>static块</h2><ol>
+<li>只在类第一次被加载时调用</li>
+<li>执行顺序：<strong>static块&gt;匿名块&gt;构造函数</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">StaticBlock</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="comment">//staticl block &gt; anonymous block &gt; constructor function    </span></span><br><span class="line">    <span class="keyword">static</span></span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(<span class="string">"22222222222222222222"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    &#123;</span><br><span class="line">    System.out.println(<span class="string">"11111111111111111111"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">StaticBlock</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"33333333333333333333"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(<span class="string">"44444444444444444444"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实例化对象，输出：22222 111111 444444 33333</p>
+<h1 id="单例模式"><a href="#单例模式" class="headerlink" title="单例模式"></a>单例模式</h1><p><strong>限定某个类在整个程序运行过程中，只能保留一个实例对象在内存空间。（一个类只有一个对象）</strong></p>
+<p>·<strong>设计模式</strong>：在软件开发过程中，经过验证的，用于解决在特定环境下的、重复出现的、特定问题的解决方案。<br>23种设计模式：创建型、结构型、行为型</p>
+<p>·单例模式：保证一个类有且只有一个对象</p>
+<ol>
+<li>采用static来共享对象实例</li>
+<li>采用private构造函数，防止外界new操作  </li>
+</ol>
+<p><strong>用我的话来说，单例模式就是为了让一个类有且只有一个对象——构造函数是private的，只能在类内调用，所以我就在类中新建static对象实例，外界通过方法来获取这个对象（注意这个获取方法getInstance也是static的，这样才能直接通过类名来调用）。而且外界无法再new实例。</strong></p>
+<p>例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Singleton obj = <span class="keyword">new</span> Singleton(); <span class="comment">//共享同一个对象实例</span></span><br><span class="line">    <span class="keyword">private</span> String content;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span>  <span class="comment">//确保只能在类内调用私有的构造函数</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.content = <span class="string">"abc"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getContent</span><span class="params">()</span>     </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> content;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setContent</span><span class="params">(String content)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.content = content;</span><br><span class="line">    &#125;    </span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span>    </span>&#123;</span><br><span class="line">        <span class="comment">//静态方法使用静态变量，外界以此获得对象实例</span></span><br><span class="line">        <span class="keyword">return</span> obj;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Singleton obj1 = Singleton.getInstance();</span><br><span class="line">        System.out.println(obj1.getContent());  <span class="comment">//abc</span></span><br><span class="line">        </span><br><span class="line">        Singleton obj2 = Singleton.getInstance();</span><br><span class="line">        System.out.println(obj2.getContent());  <span class="comment">//abc</span></span><br><span class="line">        </span><br><span class="line">        obj2.setContent(<span class="string">"def"</span>);</span><br><span class="line">        System.out.println(obj1.getContent());</span><br><span class="line">        System.out.println(obj2.getContent());</span><br><span class="line">        </span><br><span class="line">        System.out.println(obj1 == obj2); <span class="comment">//true, obj1和obj2实质为同一个</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/08/15/java%E5%9F%BA%E7%A1%80%E5%B7%A9%E5%9B%BA/" data-id="ckdvu4b560003hf6c2dd47v3h"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JAVA/" rel="tag">JAVA</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/2020/08/15/Docker%E5%89%8D%E5%90%8E%E7%AB%AF%E5%88%86%E7%A6%BB%E9%A1%B9%E7%9B%AE%E9%83%A8%E7%BD%B2/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">Docker前后端分离项目部署</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+
+  
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+  
+<script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'dd9dd0a01eb6aea2b4b2',
+      clientSecret: 'f10df8d5a64e14405c16d484ff17f526f1ff2c21',
+      repo: 'gitalk_blog',
+      owner: 'JosephLZD',
+      admin: ['JosephLZD'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2020 Blog_JosephLZD</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+
+<aside class="sidebar sidebar-specter">
+  
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="Blog_JosephLZD"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archive</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+  
+<script src="/js/tocbot.min.js"></script>
+
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+
+</body>
+</html>
